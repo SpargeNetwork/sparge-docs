@@ -1,0 +1,18 @@
+site_name: Sparge Documentation
+site_description: Experimental JavaScript-native blockchain playground
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+  features:
+    - navigation.instant
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Manifesto: manifesto.md
+  - Observer Node: observer.md
+  - Wallet: wallet.md
+  - FAQ: faq.md
