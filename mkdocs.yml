@@ -16,3 +16,6 @@ nav:
   - Observer Node: observer.md
   - Wallet: wallet.md
   - FAQ: faq.md
+
+extra_css:
+  - stylesheets/extra.css
