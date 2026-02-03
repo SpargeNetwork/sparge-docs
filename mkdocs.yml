@@ -5,10 +5,13 @@ theme:
   name: material
   palette:
     scheme: slate
+    primary: custom
+    accent: custom
   features:
     - navigation.instant
     - navigation.sections
     - content.code.copy
+
 
 nav:
   - Home: index.md
