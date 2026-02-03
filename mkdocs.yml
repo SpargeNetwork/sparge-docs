@@ -15,6 +15,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Rewards: rewards.md
   - Manifesto: manifesto.md
   - Observer Node: observer.md
   - Wallet: wallet.md
