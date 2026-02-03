@@ -20,6 +20,10 @@ nav:
   - Observer Node: observer.md
   - Wallet: wallet.md
   - FAQ: faq.md
+  - ops: ops.md
+  - Participation: participation.md
+  - Protocol Overview: protocol.md
+  - Security: security.md
 
 extra_css:
   - stylesheets/extra.css
