@@ -21,6 +21,7 @@ nav:
   - Wallet: wallet.md
   - FAQ: faq.md
   - ops: ops.md
+  - rpc: rpc.md
   - Participation: participation.md
   - Protocol Overview: protocol.md
   - Security: security.md
