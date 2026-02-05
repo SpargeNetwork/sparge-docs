@@ -2,10 +2,10 @@
 
 Sparge is an experimental, JavaScript-native blockchain playground.
 
-It exists to explore what happens when communities, code, and AI come together —
+It exists to explore what happens when communities, code, and AI come together --
 without pretending to be a financial system or an investment.
 
-Sparge is **desktop-first**, **community-driven**, and intentionally minimal.
+Sparge is desktop-first, community-driven, and intentionally minimal.
 Things may change. Things may break. That is part of the experiment.
 
 ---
@@ -20,18 +20,18 @@ It focuses on:
 - community experimentation
 - tooling that feels closer to a launcher or game client than to a bank
 
-Sparge does not try to solve “everything”.
-It exists to see what is possible — and what is not.
+Sparge does not try to solve "everything".
+It exists to see what is possible -- and what is not.
 
 ---
 
 ## What Sparge is not
 
-Sparge is **not**:
+Sparge is not:
 - an investment
 - a promise of value
 - a bank or a fiat-backed system
-- a “next generation” replacement for existing chains
+- a "next generation" replacement for existing chains
 
 There are no guarantees about:
 - uptime
@@ -45,9 +45,9 @@ If you are looking for certainty, Sparge is not for you.
 
 ## How the network works (high level)
 
-Sparge is kept online by **community-run nodes**.
+Sparge is kept online by community-run nodes.
 
-- **Observer nodes** help sync, store, and relay blockchain data
+- Observer nodes help sync, store, and relay blockchain data
 - Block production follows fixed intervals
 - There is no proof-of-work mining
 
@@ -58,7 +58,7 @@ Participation is about keeping the network available, not extracting rewards.
 
 ## Wallet-first experience
 
-Sparge is designed around a **desktop wallet**:
+Sparge is designed around a desktop wallet:
 
 - keys are generated and stored locally
 - transactions are signed locally
@@ -99,9 +99,9 @@ This is intentional.
 ## Get involved
 
 If you are curious rather than certain, you can:
-- run an **Observer Node**
-- explore the **Wallet**
-- read the **Manifesto**
+- run an Observer Node
+- explore the Wallet
+- read the Manifesto
 - experiment, break things, and learn
 
 Sparge is not about arriving.
