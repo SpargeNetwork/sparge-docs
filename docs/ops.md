@@ -1,25 +1,49 @@
 # Ops / Runbook
 
-## Start
+## Producer Run
 
-```
-npm start
-```
+- Start node + explorer: `npm start`
+- Start block production: `npm run mine:start`
+- Stop block production: `npm run mine:stop`
+- Mining status: `npm run mine:status`
 
-## Mining
+## Observer Run (source)
 
-```
-POST /api/mining/start
-POST /api/mining/stop
-```
+In `config/config.yml`:
+- `node.mode: observer`
+- `node.producerUrl: "http://localhost:3051"`
 
-## Data Reset
+Start observer:
+- `npm start`
 
-Remove chain data and restart:
+## Observer Run (Windows app)
 
-- `server/data/genesis.json`
-- `server/data/state.db`
+- Build installer: `npm run dist:observer:win`
+- Install: `release/Sparge Observer Setup 0.1.0.exe`
+- Data/log path: `%APPDATA%\\SpargeObserver\\`
 
-## Config
+## Reset Data
 
-Main config file: `config/config.yml`
+Producer local reset script:
+- `powershell scripts/reset-chain.ps1`
+
+Observer app reset (desktop app):
+- remove `%APPDATA%\\SpargeObserver\\data`
+- optionally remove `%APPDATA%\\SpargeObserver\\config.json`
+
+## Core Config
+
+Main config file:
+- `config/config.yml`
+
+Important keys:
+- `node.mode` (`producer` or `observer`)
+- `node.producerUrl`
+- `chain.*`, `token.*`, `rewards.*`, `tx.*`
+
+## Release Notes
+
+Do not commit build artifacts:
+- `release/`
+- `build/`
+- `electron/runtime/`
