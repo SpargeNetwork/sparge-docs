@@ -1,40 +1,94 @@
 # Wallet
 
-Sparge wallets generate Ed25519 keys locally. Browser wallet keys stay in browser storage; CLI wallet keys stay in the local wallet file. Private keys are not sent to producer or observer endpoints.
+The Sparge Wallet is the simplest way to use Sparge. You do not need to run a node or enter commands.
 
-## Create and inspect a CLI wallet
+!!! warning "Public alpha"
+    The wallet and network are still in development. During the public alpha, use only amounts you can afford to lose and always keep a safe backup.
 
-```powershell
-npm run wallet create
-npm run wallet show
-```
+## Open the wallet
 
-`npm run wallet show -- --full` displays private material and should only be used in a private terminal. Back up exported wallet material separately from node backups: producer backups contain chain state, not wallet private keys.
+Open the wallet only through an official SpargeNetwork link. Check the website address before creating an account, importing a backup, or approving a transaction.
 
-## Send a transfer
+The official public wallet link will be added here when it is available.
 
-```powershell
-npm run tx send --to <spg_address> --amount 1 --fee 0.000001 --memo "optional"
-```
+## Create an account
 
-The CLI signs locally and submits the signed transaction to the configured producer. An observer rejects `POST /api/tx` with HTTP `403` because observer mode is read-only.
+1. Open the Sparge Wallet.
+2. Select **Create account**.
+3. Follow the steps shown by the wallet.
+4. Create a backup immediately.
+5. Store the backup somewhere safe and separate from the device running the wallet.
 
-## Participation transactions
+You may share your public wallet address to receive SPRG. Never share your private key, recovery information, or wallet backup.
 
-The wallet supports `register_participant`, `unregister_participant`, and protocol `heartbeat` transactions in addition to transfers. These on-chain participant heartbeats are distinct from the private observer-node heartbeat used for network-health reporting.
+## Back up your wallet
 
-Registration status can remain pending until the transaction is included in a block. See [Participation](protocol.md#participation) for bond, sponsor, active-window, and genesis-operator rules.
+Your backup gives full access to your wallet. Anyone who obtains it can use your funds.
 
-## Browser wallet
+- Keep at least one backup away from your everyday device.
+- Do not use screenshots, email, or public cloud folders.
+- Never share a backup with support staff, administrators, or other users.
+- Check that your backup is complete and readable.
+- Remove old copies only after confirming that another backup works.
 
-The browser wallet provides client-side key generation, transaction signing, and JSON import/export. Treat exported JSON as sensitive private-key material. Do not upload it to the explorer, operator dashboard, issue tracker, or support channel.
+SpargeNetwork cannot recover a lost wallet or missing backup.
 
-## Address format
+## Receive SPRG
 
-An address is:
+1. Open your wallet.
+2. Select **Receive**.
+3. Share your complete wallet address with the sender.
+4. For an important payment, verify the address through a second channel.
+5. Wait for the transaction to show as confirmed.
 
-```text
-spg_ + base58(sha256(publicKeyBytes)[0..20])
-```
+A received transaction may first appear as **Pending**. Your available balance is updated after the transaction is included in a block.
 
-`publicKeyHex` is the raw 32-byte Ed25519 public key encoded as 64 lowercase hexadecimal characters. For canonical signing and transaction fields, see the [Protocol Guide](protocol.md#transactions).
+## Send SPRG
+
+1. Select **Send**.
+2. Enter the recipient's complete wallet address.
+3. Enter the amount.
+4. Review the amount and transaction fee.
+5. Add a memo only when its contents may be public.
+6. Check all details again.
+7. Confirm the transaction.
+
+Confirmed blockchain transactions cannot be reversed. For an important amount sent to a new address, make a small test payment first.
+
+## Track a transaction
+
+After sending, the wallet shows a transaction ID. Keep it until the payment is confirmed. You can also search for the transaction in the Sparge Explorer.
+
+- **Pending**: the transaction is waiting to be included in a block.
+- **Confirmed**: the transaction has been included in the blockchain.
+- **Rejected**: the transaction was refused and was not submitted.
+- **Unknown**: the wallet cannot currently determine the status. Check the transaction ID in the Explorer before paying again.
+
+Do not repeat a payment only because confirmation takes longer than expected. Always check the original transaction first.
+
+## Memos are public
+
+A transaction memo becomes permanently visible on the blockchain. Use one only for non-confidential information.
+
+Never put passwords, recovery information, personal data, email addresses, access codes, or other secrets in a memo.
+
+## Restore a wallet
+
+Use **Import wallet** to restore a backup you created earlier.
+
+1. Confirm that you are using the official wallet.
+2. Select your own wallet backup.
+3. After importing, check your wallet address and balance.
+4. Keep the backup after a successful import.
+
+Never import a backup received from someone else. Never upload a wallet backup to an Explorer, support form, or other website.
+
+## Use your wallet safely
+
+- Open the wallet only through official SpargeNetwork links.
+- Check the address and amount before every payment.
+- Keep your browser and device up to date.
+- Prefer a device that you control.
+- Never share your private key or wallet backup.
+- Treat memos as permanently public information.
+- Check an unclear transaction in the Explorer before paying again.
