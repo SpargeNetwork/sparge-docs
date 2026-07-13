@@ -1,67 +1,90 @@
-# Observer Node
+# Help Verify Sparge
 
-An observer is a read-only Sparge node. It independently synchronizes blocks from the official producer, verifies chain identity and block continuity, applies state transitions locally, and serves its own explorer. Observers validate the chain but do not produce blocks or participate in consensus.
+An Observer Node independently downloads, validates, and stores Sparge blocks. Running one helps compare the official producer's chain state and makes network behavior more transparent.
 
-## Run from source
+An observer is optional. Users and application builders do not need one to create wallets, read the public API, or submit transactions.
 
-Set the node mode and producer URL in `config/config.yml`:
+## What an observer does
+
+- synchronizes blocks from a configured producer
+- verifies chain identity, height continuity, hashes, and state transitions
+- maintains its own SQLite chain state
+- serves a local read-only Explorer and API
+- reports optional privacy-preserving network health
+
+An observer does not create blocks, participate in consensus, or accept `POST /api/tx`.
+
+## Why it matters
+
+The current network has one official producer. Observers let independent parties:
+
+- compare height and latest hash
+- detect a chain-identity mismatch
+- verify state locally
+- operate a separate read endpoint for their own applications
+- contribute aggregate sync-health information
+
+Observers improve verification and transparency; they do not remove the current single-producer trust and availability model.
+
+## Install from source
+
+Requirements are Node.js 20, npm, Git, and enough disk space for chain growth.
+
+```powershell
+git clone https://github.com/SpargeNetwork/sparge-node.git
+cd sparge-node
+npm install
+```
+
+Set observer mode in `config/config.yml`:
 
 ```yaml
 node:
   mode: observer
-  producerUrl: "http://localhost:3051"
+  producerUrl: "https://your-approved-sparge-endpoint.example"
 ```
 
-Then start the node:
+Use a producer URL announced through an official SpargeNetwork channel. Then start:
 
 ```powershell
 npm start
 ```
 
-Use a separate `DATA_DIR` when a producer and observer run on the same host. Never point both processes at the same SQLite database.
+Open the local Explorer at the configured port and check `/api/status`.
 
 ## Windows desktop observer
 
-Build the installer with:
+When an official Windows installer is published, use its first-run setup to choose the producer URL and local port. Development builds can be created from source with:
 
 ```powershell
 npm run dist:observer:win
 ```
 
-The installer is written to `release/Sparge Observer Setup 0.1.0.exe`. First-run setup asks for the producer URL and local observer port.
+The desktop observer stores files under `%APPDATA%\SpargeObserver\`:
 
-The desktop app stores its runtime files under `%APPDATA%\SpargeObserver\`:
+- `config.json`
+- `data\state.db`
+- `logs\node.log`
 
-- `config.json`: local observer settings
-- `data\state.db`: synchronized chain state
-- `logs\node.log`: runtime log
+Installers should be obtained from official SpargeNetwork release channels, not third-party download sites.
 
-Release binaries belong in GitHub Releases, not in Git.
+## Check synchronization
 
-## Synchronization status
+Call the observer's local `GET /api/status` and inspect:
 
-Query `GET /api/status` on the observer. Important fields include:
-
-- `nodeMode`: must be `observer`
-- `syncState`: `synced`, `syncing`, or `error`
-- `syncedHeight`
-- `producerHeight`
+- `nodeMode`: `observer`
+- `chainId` and `genesisHash`: expected network identity
+- `syncState`: `syncing`, `synced`, or `error`
+- `syncedHeight` and `producerHeight`
 - `lagBlocks`
-- `genesisHash`
+- `latestHash`
+- `lastSyncError`
 
-Observer container health treats a fatal storage or invariant failure and `syncState: "error"` as unhealthy. Ordinary sync lag does not make the process itself unavailable.
-
-## Heartbeats and network health
-
-At the configured interval, an observer sends `POST /api/network/heartbeat` to its producer. The payload contains a persistent random node ID, client version, current height and hash, listing preference, and optional public alias and country.
-
-The producer derives the remote IP from the connection. It does not accept a client-provided IP. Heartbeats update only the observer registry; they cannot alter chain state, block validation, mining, or consensus.
-
-The stable identity is stored as `observer-node-id.json` in the observer data directory. Restarts retain the same identity. It is randomly generated and is not derived from a hostname, username, IP address, MAC address, or hardware identifier.
+A small temporary lag is normal. Do not use an observer as a current read source when it is in `error`, serves an unexpected chain, or exceeds your application's allowed lag.
 
 ## Privacy and public listing
 
-Public listing is opt-in and disabled for each observer by default:
+Observer listing is opt-in and disabled by default:
 
 ```yaml
 observer:
@@ -70,55 +93,61 @@ observer:
   countryCode: ""
 ```
 
-Environment overrides are:
+When enabled, the public list can show alias, country code, version, height, lag, status, and last-seen time. It does not expose raw IP addresses, hostnames, usernames, machine metadata, internal node IDs, or latest hashes.
 
-- `OBSERVER_PUBLIC_LISTING_ENABLED`
-- `OBSERVER_PUBLIC_ALIAS`
-- `OBSERVER_COUNTRY_CODE`
+Private observers still contribute to aggregate network counts. Observer heartbeats are registry-only and cannot affect blocks, transactions, rewards, or consensus.
 
-The local observer dashboard can change these privacy settings. Turning listing off removes the observer from the public list on its next heartbeat while retaining it in aggregate counts.
+The observer stores a random persistent identity in `observer-node-id.json`. It is not derived from hardware or host identity. Keep this file when preserving the same observer identity; removing it creates a new registry identity.
 
-`GET /api/network/status` includes aggregate counts for public and private observers. `GET /api/network/observers` includes only opted-in observers and exposes, at most:
+## Local privacy settings
 
-- public alias
-- country code
-- version
-- current height
-- synchronization lag
-- status
-- last-seen time
+The local observer UI can update listing preferences. Local-only endpoints are also available:
 
-Public responses never expose raw IP addresses, hostnames, usernames, machine metadata, internal node IDs, or latest block hashes.
+- `GET /api/observer/settings`
+- `POST /api/observer/settings`
 
-An operator can disable the public list globally with `network.publicObserverListEnabled: false`; aggregate network counts remain available.
+Example body:
 
-## Status calculation
-
-Active counts are calculated from recent heartbeats rather than all nodes ever registered:
-
-- `fully_synced`: online, at producer height, and latest hash matches
-- `syncing`: online but behind the producer
-- `mismatch`: at producer height but reporting a different hash
-- `offline`: no heartbeat within `observerOfflineAfterSeconds`
-
-Offline and mismatch observers are not counted as healthy active observers. Records are retained until the configured retention period expires.
-
-Default timing configuration:
-
-```yaml
-network:
-  heartbeatIntervalSeconds: 60
-  observerOfflineAfterSeconds: 180
-  observerRetentionDays: 180
-  publicObserverListEnabled: true
+```json
+{
+  "publicListingEnabled": true,
+  "publicAlias": "Brussels Observer",
+  "countryCode": "BE"
+}
 ```
+
+Turning listing off takes effect on the next heartbeat while the observer continues contributing to aggregate counts.
+
+## Updating
+
+For a source installation:
+
+1. Stop the observer cleanly.
+2. Record its chain identity, height, and configured producer URL.
+3. Pull the intended release and run `npm install` when dependencies changed.
+4. Start with the same observer data directory.
+5. Verify chain identity and synchronization status.
+
+Observer state can normally be rebuilt from the producer. Preserve the old database and logs before deleting local state when investigating a mismatch.
 
 ## Troubleshooting
 
-`producer genesisHash mismatch` means the observer and producer belong to different chain histories. Preserve evidence if needed, remove only the observer data, and synchronize it again from the intended producer.
+### Connection refused or timeout
 
-`prevHash mismatch` indicates local divergence. Stop the observer, preserve its database for diagnosis, then reset only its local data and resynchronize.
+Verify the configured producer URL, DNS, TLS, firewall, and local clock. Inside a container, `localhost` refers to that container rather than another service.
 
-For connection failures, verify the producer URL, port, firewall, and DNS. Inside Docker Compose, use `http://producer:3051`, not `localhost`, because each container has its own loopback interface.
+### Genesis hash mismatch
 
-For deployment, logs, and health monitoring, see the [Operator Guide](operator-guide.md).
+The observer is pointed at another chain or retains state from a different chain. Confirm the intended official endpoint. Preserve evidence, then reset only the observer data and synchronize again.
+
+### Previous-hash mismatch
+
+Local observer history diverged from the producer feed. Stop the observer, preserve its database and logs, verify chain identity, and rebuild the observer state.
+
+### Observer remains offline in the public list
+
+Check producer reachability, heartbeat errors, system time, and the configured interval. Public status becomes offline when no recent heartbeat arrives; it does not necessarily mean the local process has stopped.
+
+### Transaction submission returns `403`
+
+This is expected. Observers are read-only. Broadcast signed transactions to the official producer endpoint.
