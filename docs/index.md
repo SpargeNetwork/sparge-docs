@@ -1,39 +1,53 @@
-# Sparge Chain
+# Build on Sparge
 
-Sparge Chain is an experimental, JavaScript-native blockchain for public-alpha testing and community experimentation. It is infrastructure software, not an investment, bank, fiat-backed system, or promise of value.
+Sparge is an experimental public-alpha blockchain for wallets, payments, games, explorers, marketplaces, and community-built tools. It exposes a small JSON API, uses deterministic signed transactions, and keeps wallet keys under the user's control.
 
-The current network uses one official producer. Observer nodes independently sync and validate the chain state, but they do not produce blocks or participate in consensus. Observer sync currently uses HTTP rather than peer-to-peer discovery or gossip.
+You do not need to run the official producer to use Sparge or build an application. Applications read chain data from the public API, sign transactions locally, and broadcast the signed payload to the producer.
 
-## Public alpha
+!!! warning "Public alpha"
+    Sparge is experimental software, not an investment or financial guarantee. APIs, economics, chain data, and compatibility rules may change before a stable release.
 
-Sparge is early-stage software. Expect breaking changes, migrations, occasional resets between milestones, evolving economics, and no guarantee of uptime, permanence, exchange listing, or future direction.
+## What Sparge provides
 
-The project prioritizes:
-- deterministic protocol behavior
-- readable JavaScript implementation
-- locally held wallet keys
-- independently validating observer nodes
-- bounded and validated public APIs
-- recoverable producer operations
+- Ed25519 accounts with locally controlled keys
+- deterministic addresses and transaction identifiers
+- transfers with integer-denominated amounts and optional public memos
+- account balances, nonces, transaction history, blocks, and network status over HTTP
+- independently validating Observer Nodes for additional transparency
+- a deliberately small protocol surface that can be integrated without a large SDK
 
-## Choose a guide
+Sparge currently has one official producer. Observer Nodes independently synchronize and validate its chain state, but they do not produce blocks or provide decentralized consensus.
 
-- [Getting Started](getting-started.md): install the software and run a local producer.
-- [Wallet](wallet.md): create keys and submit signed transactions.
-- [Observer Node](observer.md): run a read-only validating node and configure public listing.
-- [Protocol](protocol.md): understand blocks, transactions, participation, rewards, and current consensus limitations.
-- [Developer Guide](developer-guide.md): integrate safely with validation, limits, errors, and node internals.
-- [RPC API](rpc.md): use the canonical HTTP endpoint reference.
-- [Operator Guide](operator-guide.md): deploy, monitor, back up, replay, recover, and upgrade a producer.
-- [Security](security.md): understand the public-alpha security model and report vulnerabilities.
-- [Configuration](reference/configuration.md): review configuration keys and environment overrides.
+## Start here
 
-## Network model
+| I want to... | Go to |
+| --- | --- |
+| Understand the project | [Why Sparge](why-sparge.md) |
+| Create or use an account | [Wallet](wallet.md) |
+| Build an application | [Build on Sparge](builder-guide.md) |
+| Integrate an endpoint | [RPC API](rpc.md) |
+| Understand chain rules | [Protocol](protocol.md) |
+| Help verify the network | [Observer Node](observer.md) |
+| Handle keys and data safely | [Security](security.md) |
 
-Producer nodes create blocks. Observer nodes fetch blocks from a configured producer, verify chain identity and continuity, apply the same state transitions locally, and provide a read-only explorer. Recent privacy-preserving observer heartbeats provide aggregate network-health information but never affect block validation, mining, chain state, or consensus.
+## Developer resources
 
-Wallet keys are generated and stored locally. Private keys are never sent to node endpoints.
+- [Sparge Node source](https://github.com/SpargeNetwork/sparge-node)
+- [Documentation source](https://github.com/SpargeNetwork/sparge-docs)
+- [Builder Guide](builder-guide.md)
+- [RPC reference](rpc.md)
+- [Integration configuration](reference/configuration.md)
 
-## Project principles
+The Explorer and browser Wallet are served by a Sparge node. A canonical public deployment URL is not currently declared in the project repositories; use only a URL announced through an official SpargeNetwork channel. The Explorer implementation is available in the [node repository](https://github.com/SpargeNetwork/sparge-node/tree/main/public).
 
-Sparge is an experiment built in the open. It does not over-promise or optimize for hype. The best ways to participate are to run an observer, test wallet and explorer flows, review the code, and report reproducible issues.
+## A simple application flow
+
+1. Read `/api/status` and verify the expected chain identity.
+2. Generate or import an Ed25519 key locally.
+3. Derive the `spg_` address from the public key.
+4. Read the account nonce and balance.
+5. Build the canonical transaction message.
+6. Sign locally and broadcast to `POST /api/tx`.
+7. Poll the transaction endpoint until it is confirmed in a block.
+
+Continue with [Build on Sparge](builder-guide.md#your-first-transfer-integration).
