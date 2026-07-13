@@ -16,20 +16,17 @@ nav:
   - Home: index.md
   - Manifesto: manifesto.md
   - Protocol Overview: protocol.md
-
   - Wallet: wallet.md
   - Participation: participation.md
   - Rewards: rewards.md
   - Observer Node: observer.md
   - FAQ: faq.md
-
   - RPC API: rpc.md
   - Validation: validation.md
   - Rate Limits: rate-limits.md
   - Request Size Limits: request-size-limits.md
   - Network: network.md
   - Security: security.md
-
   - Operations: ops.md
 
 extra_css:
