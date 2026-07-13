@@ -18,15 +18,16 @@ theme:
 nav:
   - Home: index.md
   - Why Sparge: why-sparge.md
+  - Getting Started: getting-started.md
   - Wallet: wallet.md
+  - Participate: participation.md
   - Build on Sparge: builder-guide.md
   - RPC API: rpc.md
   - Protocol: protocol.md
-  - Observer Node: observer.md
   - Security: security.md
   - FAQ: faq.md
   - Reference:
-      - Configuration: reference/configuration.md
+      - Integration Configuration: reference/configuration.md
 
 extra_css:
   - stylesheets/extra.css
