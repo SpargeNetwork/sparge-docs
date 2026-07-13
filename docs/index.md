@@ -9,7 +9,6 @@ The current network uses one official producer. Observer nodes independently syn
 Sparge is early-stage software. Expect breaking changes, migrations, occasional resets between milestones, evolving economics, and no guarantee of uptime, permanence, exchange listing, or future direction.
 
 The project prioritizes:
-
 - deterministic protocol behavior
 - readable JavaScript implementation
 - locally held wallet keys
