@@ -26,6 +26,7 @@ nav:
   - Rate Limits: rate-limits.md
   - Request Size Limits: request-size-limits.md
   - Network: network.md
+  - Mempool: mempool.md
   - Security: security.md
   - Operations: ops.md
 
