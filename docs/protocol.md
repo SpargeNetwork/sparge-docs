@@ -1,124 +1,142 @@
-# Protocol Guide
+# Protocol
 
-This guide describes the protocol implemented by the current public-alpha release. Values such as addresses, timing, supply, and fee parameters come from configuration and genesis data; check [Configuration](reference/configuration.md) and `GET /api/genesis` for a particular chain instance.
+This guide explains the public-alpha chain model. It describes what applications and users can rely on without covering producer deployment or internal implementation.
 
-## Overview
+## Current network model
 
-Sparge is currently a single-producer chain. The official producer orders transactions and creates blocks. Observer nodes independently validate and apply those blocks, but there is no multi-producer election, fork choice, finality protocol, P2P gossip, external governance, or slashing in this release.
+Sparge currently uses one official producer. It orders accepted transactions and creates blocks. Observer Nodes independently synchronize, validate, and store the chain state.
 
-This makes censorship resistance and liveness operational properties of the producer rather than guarantees of decentralized consensus.
+Observers make chain comparison and independent verification possible, but they do not produce blocks, vote on blocks, or provide a decentralized consensus/finality mechanism. Producer availability, ordering, and censorship resistance are operational properties in this release.
 
-## Chain
+## Chain identity
 
-Chain identity is bound to `chainId`, the genesis hash, `protocolVersion`, and `economicsVersion`. Nodes reject stored or synchronized state that does not match their configured identity.
+A Sparge chain is identified by:
 
-Blocks form a height-ordered hash chain. Validation checks height continuity, previous hash, recomputed block hash, transaction count, protocol/economics identity, state root, and supported transaction types. Runtime invariants and deterministic replay add operational verification but do not introduce new consensus rules.
+- `chainId`
+- `genesisHash`
+- `protocolVersion`
+- `economicsVersion`
 
-Amounts use integer micro-units. Floating-point arithmetic is not used for consensus state.
+Wallets and applications should verify these values before signing or indexing. A matching name or token symbol is not sufficient proof that two endpoints serve the same chain.
 
-## Addresses
+## Blocks
 
-- An Ed25519 public key is 32 raw bytes.
-- `publicKeyHex` is 64 lowercase hexadecimal characters.
-- Address = `spg_` + `base58(sha256(publicKeyBytes)[0..20])`.
+Blocks have sequential heights beginning at genesis, a timestamp, previous-block hash, chain identity, transaction list, fee and reward data, and a state root.
+
+The previous hash links each block to its predecessor. The state root commits to the resulting canonical state. Explorers and indexers should preserve the last processed height and hash and stop if continuity changes unexpectedly.
+
+The configured target block interval is exposed by `/api/status`. A target is not a guarantee: applications should use actual timestamps and tolerate delayed blocks.
+
+## Accounts
+
+An account is identified by an address derived from a 32-byte Ed25519 public key:
+
+```text
+spg_ + base58(sha256(publicKeyBytes)[0..20])
+```
+
+Canonical account state includes a balance and nonce. Participation records and balance history add protocol-specific state for eligible accounts.
+
+The nonce prevents replay and orders transactions from one sender. Submitted transactions must use the next nonce expected by the producer. Applications sending multiple transactions from one account should serialize them.
+
+## Amounts and fees
+
+Balances, transfers, fees, pools, and rewards use integer base units represented as decimal strings. The current chain exposes 9 decimals, but clients should read `decimals` from status.
+
+Fees are paid by the sender and credited to the treasury. The current minimum is exposed as `minFeeMicro`. Applications must avoid floating-point arithmetic.
 
 ## Transactions
 
-The canonical UTF-8 signing message is:
-
-```text
-type|chainId|from|to|amountMicro|feeMicro|nonce|publicKeyHex|sponsor|participant|memo?
-```
-
-Fields are separated by `|`; numeric values are canonical decimal strings. The optional memo is limited to 128 characters. The transaction ID excludes the signature:
-
-```text
-txid = sha256(utf8(canonicalMessage))
-```
-
 Client-submittable transaction types are:
 
-- `transfer`
-- `register_participant`
-- `unregister_participant`
-- `heartbeat`
+- `transfer`: moves an amount from one account to another
+- `register_participant`: registers a participant and may lock a sponsor bond
+- `unregister_participant`: removes the sender's participation record and releases its bond
+- `heartbeat`: refreshes an on-chain participant's activity
 
-System-generated block entries may include `participant_reward`, `holder_reward`, `node_reward`, `treasury_reward`, `node_pool_accrual`, and `holder_pool_accrual`.
+The participant heartbeat is an on-chain transaction. It is different from an Observer Node's private network-health heartbeat.
 
-Submitted transactions pass request-shape, chain ID, signature, nonce, fee, balance, duplicate, mempool, and type-specific state checks before admission. Admission is not confirmation: a pending transaction changes chain state only when included in a valid block.
+### Canonical message
 
-## State
+Transactions sign this UTF-8 field order:
 
-Canonical state includes balances, nonces, stakes, participant records, reward-pool accounting, balance history, and chain metadata. Each block commits a deterministic state root. SQLite writes block data, indexes, state, and metadata atomically.
+```text
+type|chainId|from|to|amountMicro|feeMicro|nonce|publicKeyHex|sponsor|participant|memo
+```
 
-The producer mempool is process-local and is not canonical state. A restart clears pending transactions and users may need to resubmit them.
+The transaction ID is SHA-256 of the canonical message bytes. The Ed25519 signature covers the same bytes and is excluded from the transaction ID.
+
+Unused signed fields are empty strings. Memos are optional, public, and limited to 128 UTF-8 bytes.
+
+### Lifecycle
+
+1. A wallet reads chain identity, balance, fee, and nonce.
+2. It constructs and signs the canonical message locally.
+3. The producer validates and queues the transaction.
+4. Queued transactions remain non-canonical until included in a block.
+5. Block inclusion updates account and protocol state.
+
+The mempool is temporary and is cleared by a producer restart. Queued is therefore not the same as confirmed.
 
 ## Participation
 
-`register_participant` is an on-chain transaction:
+A participant is registered through an on-chain transaction. The signing `from` account is the sponsor, fee payer, nonce owner, and source of the refundable bond. The `participant` field identifies the account being registered.
 
-- `from` is the sponsor, signer, fee payer, and nonce owner.
-- `participant` is the address being registered.
-- The sponsor locks the configured bond as refundable collateral.
+The configured genesis operator has one free self-registration opportunity during the first `genesisFreeBlocks`, provided it has not already been used. All other registrations follow normal fee, bond, and sponsorship rules.
 
-The genesis operator has one free-registration opportunity when all conditions hold:
+A participant is active when its `lastSeenHeight` falls within the protocol activity window. An accepted transaction sent by the participant updates that height. Unregistering removes the participant and returns the bond to its sponsor.
 
-- `tx.from` equals `genesisOperatorAddress`
-- `participant` equals `from`
-- current height is below `genesisFreeBlocks`
-- the opportunity has not already been used
+## Rewards and economics
 
-The fee may be zero during that window. After it is used or expires, the normal bond and fee rules apply.
+The current per-block distribution is:
 
-A participant is active when its `lastSeenHeight` is within the configured active window. Any accepted on-chain transaction sent from the participant updates that height. `unregister_participant` removes the participant and releases the bond to its sponsor.
-
-The participant heartbeat transaction is an on-chain liveness action. It is unrelated to the off-chain observer heartbeat described in the [Observer Node guide](observer.md#heartbeats-and-network-health).
-
-## Block rewards
-
-The current per-block split is:
-
-| Recipient | Share | Behavior |
+| Destination | Share | Rule |
 | --- | ---: | --- |
-| Active participants | 15% | Split equally; goes to treasury when none are active. |
-| Node holders | 70% | Accrues in the node pool for scheduled payout. |
-| Treasury | 10% | Credited directly, plus fees and deterministic remainders. |
-| Eligible holders | 5% | Accrues in the holder pool for scheduled payout. |
+| Active participants | 15% | Split equally; sent to treasury when no participant is active. |
+| Node-holder pool | 70% | Accumulates for scheduled distribution. |
+| Treasury | 10% | Credited directly, plus fees and integer remainders. |
+| Eligible-holder pool | 5% | Accumulates for scheduled distribution. |
 
-All transaction fees go to the treasury. Node and holder pools accrue at transparent, unspendable system addresses configured as `nodePoolAddress` and `holderPoolAddress`.
+Pool addresses are transparent system addresses and are not ordinary spendable wallets.
 
-Integer division is deterministic. Every remainder goes to the treasury so each block's distribution remains conserved.
+### Holder eligibility
 
-## Holder rewards
-
-Holder eligibility uses a rolling 14-day average balance, measured in blocks:
+Holder rewards use a rolling 14-day average balance measured in blocks:
 
 ```text
 windowBlocks = floor((14 * 24 * 60 * 60) / blockTimeSeconds)
 ```
 
-At a 51-second block time this is approximately 23,717 blocks. The exact integer is derived from chain parameters.
-
-An address is eligible when its average balance over the window is at least 1,000 SPRG. If `H` is the holder pool, `avg_i` is an eligible address's average, and `Total` is the sum of eligible averages:
+An address is eligible when its average balance reaches 1,000 SPRG. Eligible addresses receive a proportional share:
 
 ```text
-reward_i = H * avg_i / Total
+reward = holderPool * addressAverage / totalEligibleAverage
 ```
 
-Payout occurs when `height - lastPayoutHeight >= windowBlocks`. If no holder is eligible, the complete holder pool goes to the treasury. The chain stores balance-history entries at each balance change so the average can be calculated deterministically.
+Integer remainders go to the treasury. When no address is eligible at payout, the complete holder pool goes to the treasury.
 
-For a new chain, enabling this behavior from genesis provides a complete first window. On pre-existing state without earlier balance history, the first window assumes a flat balance before an address's first recorded change; a protocol/storage migration may therefore require a documented chain reset.
+## State
 
-## Economics limitations
+Canonical state includes:
 
-- Equal participant rewards resist Sybil behavior only to the extent that bond and sponsorship constraints do.
-- Rolling holder eligibility can still be strategy-tested near window boundaries.
-- Pool payout and timing parameters may change before a stable release.
-- There is no external governance or slashing mechanism.
-- A single producer provides no protocol-backed liveness or censorship guarantee.
+- balances and nonces
+- participant and sponsor records
+- reward-pool accounting
+- balance history used by holder eligibility
+- total supply and mint accounting
+- latest chain identity, height, hash, and state root
 
-The economics smoke suite exercises sponsor caps, free-rider rejection, participant reward behavior, and holder-window boundaries. Tests provide implementation evidence, not an economic-security proof.
+The public API exposes selected state and derived summaries. Application-specific records such as game inventory, marketplace listings, invoices, or user profiles are not Sparge protocol state.
 
 ## Known limitations
 
-Sparge public alpha is not formal verification, a consensus-safety proof, or an audited decentralized network. The current block format has no separate producer-signature verification rule. Dedicated protocol-correctness coverage for signed transaction bursts and the complete participant lifecycle remains a known testing gap; runtime invariant and deterministic replay suites cover related behavior but are not a substitute for that focused suite.
+- one official producer and no multi-producer consensus
+- no protocol-level finality depth beyond inclusion in the current chain
+- no smart-contract runtime
+- no token or NFT creation standard
+- no WebSocket, SSE, webhook, or subscription API
+- temporary, non-durable mempool
+- economics and compatibility may change before stable release
+- no formal verification or independent security audit implied by runtime tests
+
+Builders should communicate these limits and design migrations, retries, and reconciliation accordingly.
