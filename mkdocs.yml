@@ -1,5 +1,8 @@
-site_name: Sparge Documentation
-site_description: Experimental JavaScript-native blockchain playground
+site_name: Sparge Chain
+site_description: Public alpha documentation for Sparge Chain
+
+exclude_docs: |
+  internal/
 
 theme:
   name: material
@@ -14,21 +17,17 @@ theme:
 
 nav:
   - Home: index.md
-  - Manifesto: manifesto.md
-  - Protocol Overview: protocol.md
+  - Getting Started: getting-started.md
   - Wallet: wallet.md
-  - Participation: participation.md
-  - Rewards: rewards.md
   - Observer Node: observer.md
-  - FAQ: faq.md
+  - Protocol: protocol.md
+  - Developer Guide: developer-guide.md
   - RPC API: rpc.md
-  - Validation: validation.md
-  - Rate Limits: rate-limits.md
-  - Request Size Limits: request-size-limits.md
-  - Network: network.md
-  - Mempool: mempool.md
+  - Operator Guide: operator-guide.md
   - Security: security.md
-  - Operations: ops.md
+  - FAQ: faq.md
+  - Reference:
+      - Configuration: reference/configuration.md
 
 extra_css:
   - stylesheets/extra.css
