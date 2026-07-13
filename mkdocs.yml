@@ -17,13 +17,12 @@ theme:
 
 nav:
   - Home: index.md
-  - Getting Started: getting-started.md
+  - Why Sparge: why-sparge.md
   - Wallet: wallet.md
-  - Observer Node: observer.md
-  - Protocol: protocol.md
-  - Developer Guide: developer-guide.md
+  - Build on Sparge: builder-guide.md
   - RPC API: rpc.md
-  - Operator Guide: operator-guide.md
+  - Protocol: protocol.md
+  - Observer Node: observer.md
   - Security: security.md
   - FAQ: faq.md
   - Reference:
