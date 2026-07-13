@@ -1,60 +1,82 @@
 # Security
 
-Sparge is experimental public-alpha software. Treat every public deployment as internet-facing infrastructure and every protocol/economics assumption as subject to change before a stable release.
+Sparge is public-alpha software. Security begins with understanding the current trust model: users control wallet keys, the official producer creates blocks, and Observer Nodes independently validate the resulting chain.
 
-## Security model
+## For wallet users
 
-The current chain has one official producer. Observers independently validate state but cannot provide decentralized producer liveness, censorship resistance, fork choice, or finality. Heartbeats report network health only and never influence chain state or consensus.
+- Keep private keys and wallet exports secret.
+- Back up a wallet before receiving funds.
+- Verify the complete recipient address and network before signing.
+- Review amount, fee, and memo on a trusted screen.
+- Treat memos as permanent public data.
+- Distinguish pending from confirmed transactions.
+- Never provide a private key to support staff, an Explorer, or a node operator.
 
-Wallet keys are generated and stored locally. Nodes, explorers, observer registries, logs, backups, and the Operator Dashboard must never receive or expose wallet private keys.
+Browser storage is convenient but not equivalent to an operating-system keystore or hardware-backed key. Current wallet tooling is experimental.
 
-## Public deployment
+## For application builders
 
-Use the supplied production Compose and Caddy topology:
+### Verify chain identity
 
-- Caddy is the only service exposed on ports 80 and 443.
-- Producer and observer application ports stay on the internal network.
-- Express trusts exactly one controlled Caddy hop.
-- Caddy overwrites forwarding headers and applies HTTPS/security headers.
-- Exact same-origin CORS replaces wildcard access.
-- Caddy and the application enforce request-size limits.
-- Endpoint-specific rate limits remain enabled.
-- Operator and debug routes are blocked at both proxy and application layers.
+Pin the expected `chainId`, `genesisHash`, `protocolVersion`, and `economicsVersion`. Verify them at startup and before signing. Do not trust a token symbol or hostname alone.
 
-Complete procedures are in [Operator Guide: HTTPS and Caddy](operator-guide.md#https-and-caddy).
+### Keep signing local
 
-## Administrative access
+Do not send private keys to a Sparge endpoint. Prefer client-side, hardware-backed, or dedicated signing boundaries. If a backend must sign, isolate keys from web-facing processes and restrict what can be signed.
 
-Mining start/stop routes are disabled by default and restricted to local requests when deliberately enabled for development. The private Operator Dashboard must remain disabled or loopback-only and be accessed through localhost, SSH tunneling, or a controlled VPN. Rate limiting is not authentication.
+### Use exact arithmetic
 
-Do not expose `/operator`, `/api/operator/*`, state-changing `/api/mining/*`, or `/api/debug/*` to the internet.
+Use decimal strings and `BigInt`. Floating-point rounding can send or credit the wrong amount.
 
-## API and denial-of-service controls
+### Treat public data as untrusted input
 
-The public API uses strict schemas, byte-limited JSON parsing, endpoint and global throttles, transaction concurrency limits, bounded pagination, bounded sync ranges, and a bounded process-local mempool. Unsupported content types and compressed bodies are rejected.
+Addresses, aliases, memos, versions, hashes, and API error messages must be escaped before rendering. Do not create HTML with unsanitized chain data.
 
-Proxy trust is false by default. Trusting arbitrary forwarded headers lets clients choose their apparent IP and bypass per-IP controls.
+### Design idempotent workflows
 
-See the [Developer Guide](developer-guide.md) for exact request-boundary behavior.
+Use transaction IDs as stable reconciliation keys. A repeated poll, process restart, or duplicate submission must not fulfill a payment or game reward twice.
+
+### Respect API protections
+
+Use bounded requests, backoff, jitter, and `Retry-After`. Do not bypass request-size or rate limits by distributing traffic across hosts. Cache immutable blocks and transactions.
+
+## Endpoint trust
+
+The official public Explorer/API URL is not currently declared in the project repositories. Use only endpoints announced through official SpargeNetwork channels.
+
+A malicious endpoint can lie about balances, nonces, fees, or transaction confirmation and can observe queried addresses. Local signing prevents it from directly learning a private key, but it cannot make false read data trustworthy.
+
+For higher assurance, compare independent endpoints or run an [Observer Node](observer.md).
+
+## Confirmation and finality
+
+Transaction admission returns `queued`, not confirmed. Confirmation means the transaction appears in a stored block. The current single-producer model has no separate decentralized finality protocol. Applications must define and communicate their own confirmation policy for public-alpha risk.
 
 ## Privacy
 
-Observer public listing is opt-in. Aggregate counts include private observers, but public lists omit IPs, internal node IDs, hostnames, usernames, machine metadata, and latest hashes.
+Sparge is a transparent chain. Addresses, amounts, transaction relationships, and memos can be indexed publicly. Reusing an address links its activity.
 
-Structured logs redact keys, secrets, signatures, request bodies, raw transactions, raw IPs, machine/user names, and internal observer identities. Do not put secrets in URLs because proxy logs normally include request paths and queries.
+Do not put personal data or secrets in memos. Querying a hosted Explorer can also reveal which addresses interest the requesting IP address.
 
-## Data safety
+Observer listing is opt-in. Public listings omit IPs, hostnames, internal node IDs, machine metadata, and latest block hashes.
 
-Use versioned, checksummed SQLite backups and regularly verify them by restoring into an isolated directory and running deterministic replay. Restore never belongs behind HTTP and must not run against an active producer.
+## Observer safety
 
-Replay is CLI-only and read-only against its source. It provides deterministic reconstruction evidence, not formal verification, consensus proof, cryptographic audit, or independent security review.
+- Download source and installers only from official repositories or release channels.
+- Verify chain identity after installation and update.
+- Do not expose local observer settings to the internet.
+- Keep observer data separate from wallet key storage.
+- Preserve data and logs before resetting a mismatch under investigation.
+- Remember that an observer is a read endpoint, not a transaction broadcaster.
 
-Never solve a genesis or identity mismatch by deleting production files. Freeze mining, preserve evidence, and follow the [recovery procedure](operator-guide.md#recovery).
+## Protocol limitations
+
+Sparge currently has one official producer, no smart-contract sandbox, no multi-producer consensus, no subscription transport, and no formal protocol audit implied by its test suites. These limits should be included in application threat models.
 
 ## Reporting a vulnerability
 
 Report security issues privately. PGP contact details are available on request. The project aims to acknowledge receipt within 72 hours and provide a remediation timeline after triage.
 
-The reporting scope covers core chain logic, wallet and signing flows, RPC interfaces, and Explorer behavior. Third-party dependencies and self-hosting misconfiguration are outside the project security scope unless they expose a defect in Sparge itself.
+The reporting scope covers core chain logic, wallet and signing flows, RPC interfaces, and Explorer behavior. Third-party dependencies and self-hosting misconfiguration are outside the project scope unless they expose a Sparge defect.
 
-Do not include private keys, live exploit secrets, complete signatures, or sensitive production data in a public issue.
+Do not publish private keys, live exploit secrets, complete sensitive payloads, or production data in an issue.
