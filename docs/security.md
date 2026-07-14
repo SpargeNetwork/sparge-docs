@@ -54,4 +54,4 @@ Sparge is not represented as formally verified or independently audited. Do not 
 
 ## Report a vulnerability
 
-Follow the repository [Security Policy](../SECURITY.md) and report vulnerabilities privately. Do not include private keys, live exploit secrets, complete signatures, or sensitive production data in a public issue.
+Follow the repository [Security Policy](https://github.com/SpargeNetwork/sparge-docs/security/policy) and report vulnerabilities privately. Do not include private keys, live exploit secrets, complete signatures, or sensitive production data in a public issue.
