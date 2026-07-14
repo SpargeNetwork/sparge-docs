@@ -1,84 +1,51 @@
 # Getting Started
 
-This guide runs a local Sparge producer and explorer for development or public-alpha evaluation.
+This guide explains how to use the existing Sparge public network. You do not need to install Node.js, start a producer, configure genesis, or mine blocks.
 
-## Prerequisites
+## 1. Open the official explorer
 
-- Node.js 20 is the container runtime and recommended local version.
-- npm
-- Git
-- Windows PowerShell for the supplied operational scripts
+Use the official Explorer URL published by Sparge. Check the Network Overview before using the wallet:
 
-For containers, install Docker Engine with Compose v2 instead of a local Node.js toolchain.
+- Producer should be online.
+- Chain height should be increasing.
+- Last block time should be recent.
+- Network Health should not show a critical warning.
 
-## Install
+Avoid wallet links sent through unsolicited messages. Bookmark the verified Explorer URL.
 
-From the repository root:
+## 2. Open the Wallet
 
-```powershell
-npm install
-npm start
-```
+Choose **Wallet** in the Explorer navigation. You can create a new wallet or import an existing wallet backup.
 
-The explorer and API are available at `http://localhost:3051`. Check the node with:
+The wallet runs in your browser. Creating a wallet does not create an account with Sparge and does not send your private key to the network.
 
-```powershell
-Invoke-RestMethod http://localhost:3051/api/status
-```
+## 3. Back up before receiving funds
 
-The first start creates the configured chain data in `server/data`. Later starts reuse that data; restarting does not reset the chain.
+Export the wallet backup and store it somewhere private and durable. Anyone with that backup can control the wallet. Sparge cannot reset a password, replace a lost private key, or recover a wallet after browser data is removed.
 
-## Start local block production
+Do not share a private key or wallet export with support, a Sponsor, an observer operator, or another participant.
 
-Administrative mining controls are disabled unless `dev.enableAdmin` or its environment override is enabled. For local testing:
+## 4. Receive SPRG
 
-```powershell
-$env:DEV_ENABLE_ADMIN="true"
-npm start
-```
+Select **Receive** and share only the public address beginning with `spg_`. Confirm the complete address when transferring meaningful amounts.
 
-In another terminal:
+Incoming transactions first appear as pending and become confirmed after inclusion in a block.
 
-```powershell
-npm run mine:start
-npm run mine:status
-npm run mine:stop
-```
+## 5. Send SPRG
 
-Clear the override after testing:
+Select **Send**, enter the recipient address and amount, review the fee and complete address, then confirm. The wallet signs locally and submits the signed transaction.
 
-```powershell
-Remove-Item Env:DEV_ENABLE_ADMIN -ErrorAction SilentlyContinue
-```
+A queued transaction is not yet confirmed. Use Wallet Activity or the transaction page to follow it until it appears in a block.
 
-Never expose local mining controls on a public deployment.
+## 6. Participate, optionally
 
-## Create a wallet
+Participation is optional. Registration requires a Sponsor, a bond, and a transaction fee. You can sponsor yourself or another wallet. Sponsorship does not transfer wallet control and gives the Sponsor no share of Participant rewards.
 
-```powershell
-npm run wallet create
-npm run wallet show
-```
-
-Use `npm run wallet show -- --full` only in a private terminal because it displays the private key. Continue with the [Wallet guide](wallet.md) for signed transactions and participation.
-
-## Run with Docker
-
-The local Compose stack publishes both application ports:
-
-```powershell
-docker compose up -d --build
-docker compose ps
-```
-
-- Producer explorer: `http://localhost:3051`
-- Observer explorer: `http://localhost:3052`
-
-The services use separate persistent volumes. `docker compose down` keeps them; `docker compose down -v` permanently removes their chain data. Use the [Operator Guide](operator-guide.md#docker) before treating a container deployment as persistent infrastructure.
+Read [Participation and Rewards](protocol.md#participation-and-rewards) before registering. In particular, understand activity requirements, reward maturity, unregister behavior, and the current lost-key limitation.
 
 ## Next steps
 
-- Run a read-only node with the [Observer Node guide](observer.md).
-- Review endpoint contracts in the [RPC API](rpc.md).
-- Understand chain behavior in the [Protocol Guide](protocol.md).
-- Use the [Operator Guide](operator-guide.md) for HTTPS, monitoring, backups, and recovery.
+- Learn the complete browser flow in the [Wallet guide](wallet.md).
+- Read the [FAQ](faq.md).
+- Independently validate the network with an [Observer Node](observer.md).
+- Integrate an application using the [Builder Guide](developer-guide.md).
