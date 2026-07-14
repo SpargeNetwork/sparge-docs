@@ -102,4 +102,4 @@ Addresses, balances, confirmed transactions, participation records, and sponsors
 
 ## Discord Community Identity
 
-The Community tab can link the selected wallet to a Discord account using a short-lived signed message. The universal message confirmation displays the exact challenge and hash before signing. It never signs automatically, creates no transaction, costs no SPRG, and keeps the private key local. See [Discord Community Identity](community-identity.md).
+The Community tab can link the selected wallet to a Discord account using a short-lived signed message. The universal message confirmation displays the exact challenge and hash before signing. It never signs automatically, creates no transaction, costs no SPRG, and keeps the private key local. See [Discord Community Identity](community-identity.md)
