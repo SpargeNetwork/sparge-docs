@@ -73,13 +73,21 @@ Inactivity pauses rewards but does not reset Reward Maturity. Unregistering remo
 
 Reward Maturity gradually raises a Participant's share according to the age of the current registration:
 
+#### Activation at block 1,000
+
+Reward Maturity is **not applied at block heights 0 through 999**. During those first 1,000 blocks, every eligible Active Participant receives the legacy 100% multiplier, regardless of registration age.
+
+The maturity rules activate at **block height 1,000**. From that block onward, each Participant receives the multiplier that matches the age of its current registration.
+
+Registration age still accumulates before activation. It is calculated from the original Registered Height and does not restart at block 1,000. For example, a Participant registered at block 200 has an age of 800 blocks when maturity activates at block 1,000 and therefore enters the New stage at 25%.
+
 | Age in blocks | Multiplier | Stage |
 | ---: | ---: | --- |
 | 0 through 5,100 | 25% | New |
 | 5,101 through 10,200 | 60% | Growing |
 | More than 10,200 | 100% | Mature |
 
-Maturity is based on Registered Height, not timestamps or observer heartbeats. Before activation block 1,000, legacy full Participant rewards apply. After activation, the configured stages apply deterministically.
+Maturity is based on Registered Height, not timestamps or observer heartbeats. The activation boundary changes only the applied reward multiplier; it does not change registration records or their age.
 
 If an equal base share is 10 SPRG, a New Participant receives 2.5 SPRG, a Growing Participant 6 SPRG, and a Mature Participant 10 SPRG. Integer calculations round down in base units; deterministic remainder goes to treasury.
 
@@ -97,16 +105,111 @@ This calculation uses integers and conserves the complete pool.
 
 ## Block reward distribution
 
-The current per-block allocation is:
+### Emission and changing block rewards
+
+Sparge has no fixed reward amount per block and currently has no maximum supply. Each block calculates newly minted base units from the total supply before that block, the current annualized emission rate, and the configured target number of blocks per year:
+
+```text
+newMintAccumulator += totalSupply * emissionRatePpm
+mintedBaseUnits = floor(newMintAccumulator / (1,000,000 * blocksPerYear))
+```
+
+The remainder stays in the deterministic mint accumulator instead of being discarded. This avoids losing fractions smaller than one base unit.
+
+The annualized emission rate starts at 5% (`50,000` parts per million), declines linearly by block to 2% (`20,000` parts per million) over the first four target years, and remains at 2% afterward. During the decline, the lower rate generally reduces the absolute block reward. Once the rate remains at 2%, the absolute reward can slowly increase because it is calculated over a growing supply.
+
+The Explorer's **Emission Rate** is this annualized percentage. It is not the percentage assigned to one recipient.
+
+### Per-block allocation
+
+Every block divides its newly minted amount as follows:
 
 | Destination | Share | Behavior |
 | --- | ---: | --- |
-| Active Participants | 15% | Equal base shares adjusted by Reward Maturity. |
-| Node pool | 70% | Accrues for the configured Node Holder mechanism. |
-| Treasury | 10% | Credited directly, plus fees and deterministic remainder. |
-| Holder pool | 5% | Accrues for eligible holder payouts. |
+| Active Participants | 15% | Paid every block in equal base shares adjusted by Reward Maturity. |
+| Node Pool | 70% | Accumulates until the block-based reward payout. |
+| Treasury | 10% | Credited every block, in addition to fees and specified remainders. |
+| Holder Pool | 5% | Accumulates until the block-based reward payout. |
 
-Holder eligibility uses a rolling 14-day average balance and a current threshold of 1,000 SPRG. The exact window is calculated in blocks from the configured target block time.
+All calculations use integer base units and round down. Any remainder from splitting the newly minted amount goes to Treasury. Participant rewards below their 15% pool because of maturity, integer division, or a lack of Active Participants also go to Treasury.
+
+For example, if a block mints exactly 1,000 SPRG before integer rounding:
+
+| Destination | Amount |
+| --- | ---: |
+| Participant Pool | 150 SPRG |
+| Node Pool accrual | 700 SPRG |
+| Treasury base allocation | 100 SPRG |
+| Holder Pool accrual | 50 SPRG |
+
+The Node and Holder amounts are accruals, not payouts to every node or holder in that block.
+
+### Reward payout cycle
+
+Node and Holder Pool payouts are triggered by block height, not wall-clock time. With the current 51-second target block time, the payout window is `23,717` blocks, approximately 14 days. A slower or faster real production schedule changes the elapsed wall-clock time but not the required block count.
+
+At the payout block:
+
+1. That block first adds its 70% Node Pool and 5% Holder Pool accruals.
+2. The complete accumulated balances of both pools are processed, including the payout block's accruals.
+3. Eligible rewards are calculated proportionally in integer base units.
+4. Each pool is set to zero after processing.
+5. Integer leftovers, or a complete pool without eligible recipients, go to Treasury.
+
+Pool balances do not roll into another cycle after a payout.
+
+### Node Pool
+
+The Node Pool is distributed proportionally over positive stake recorded in the protocol ledger:
+
+```text
+nodeReward = floor(nodePool * addressStake / totalRecordedStake)
+```
+
+Integer leftovers go to Treasury. If there is no positive recorded stake at payout time, the complete Node Pool goes to Treasury.
+
+**Public Alpha limitation:** the current public transaction set has no supported `stake` transaction and the browser wallet has no public node-staking flow. Running an observer does not create stake and does not automatically earn Node Pool rewards. The Node Pool must not be described as an observer reward until a future explicit protocol mechanism defines eligibility and ownership proof.
+
+### Holder Pool
+
+Holder eligibility uses the average confirmed balance over the current payout window. A wallet is eligible when:
+
+- its average balance is at least 1,000 SPRG;
+- it is not the Producer, Treasury, Node Pool, or Holder Pool system address.
+
+Rewards are proportional to eligible average balances:
+
+```text
+holderReward = floor(holderPool * walletAverageBalance / totalEligibleAverageBalance)
+```
+
+This is not an equal payment per wallet. A wallet averaging 2,000 SPRG receives twice the share of a wallet averaging 1,000 SPRG, assuming both remain eligible. Moving funds into a wallet shortly before payout affects only part of its block-weighted average.
+
+Integer leftovers go to Treasury. If no wallet meets the threshold at payout time, the complete Holder Pool goes to Treasury. The processed Holder Pool is then zero, regardless of whether holders or Treasury received it.
+
+### Treasury receipts
+
+Treasury can receive more than the displayed base 10% because it also receives:
+
+- transaction fees;
+- per-block allocation rounding remainders;
+- unused Participant Pool amounts caused by maturity or integer division;
+- the full Participant Pool when there are no Active Participants;
+- Node and Holder payout rounding leftovers;
+- the complete Node or Holder Pool when that pool has no eligible recipients.
+
+These transfers conserve the complete minted amount; they do not mint additional SPRG beyond the block's recorded total.
+
+### Reading the Explorer
+
+The two pending pool values are separate:
+
+- **Node Pool - Accumulated** is the pending 70% allocation.
+- **Holder Pool - Accumulated** is the pending 5% allocation.
+
+The Node Pool is normally about 14 times the Holder Pool because `70 / 5 = 14`. **Total New Tokens** on a block is the complete minted amount; **Participant Rewards** is only the portion of the 15% Participant Pool actually paid to Active Participants in that block.
+
+Explorer reward values are informational representations of on-chain block and state data. Eligibility and payout results are determined by protocol validation, not by the browser display.
 
 ## Current limitations
 
