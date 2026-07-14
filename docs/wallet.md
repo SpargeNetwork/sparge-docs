@@ -1,94 +1,82 @@
 # Wallet
 
-The Sparge Wallet is the simplest way to use Sparge. You do not need to run a node or enter commands.
+The Sparge browser wallet creates and signs transactions locally. Private keys stay in browser storage unless you explicitly export them.
 
-!!! warning "Public alpha"
-    The wallet and network are still in development. During the public alpha, use only amounts you can afford to lose and always keep a safe backup.
+## Create a wallet
 
-## Open the wallet
+1. Open **Wallet** in the official Explorer.
+2. Choose **Create Wallet**.
+3. Read the recovery warning and confirm.
+4. Export a wallet backup before receiving funds.
 
-Open the wallet only through an official SpargeNetwork link. Check the website address before creating an account, importing a backup, or approving a transaction.
+Creating another wallet creates a separate key and address. It does not replace or recover an existing wallet.
 
-The official public wallet link will be added here when it is available.
+## Import a wallet
 
-## Create an account
+Use **Import Wallet** and select a trusted Sparge wallet export. Import only on a device and Explorer URL you trust. Never upload wallet files to an issue, support chat, observer, or block explorer form.
 
-1. Open the Sparge Wallet.
-2. Select **Create account**.
-3. Follow the steps shown by the wallet.
-4. Create a backup immediately.
-5. Store the backup somewhere safe and separate from the device running the wallet.
+## Select and identify wallets
 
-You may share your public wallet address to receive SPRG. Never share your private key, recovery information, or wallet backup.
+The wallet selector shows locally available wallets by name and shortened address. Shortening is display-only: transactions, links, and copy controls use the complete address or transaction ID.
 
-## Back up your wallet
+Give local wallets recognizable names, but always verify the full destination address before sending.
 
-Your backup gives full access to your wallet. Anyone who obtains it can use your funds.
+## Receive
 
-- Keep at least one backup away from your everyday device.
-- Do not use screenshots, email, or public cloud folders.
-- Never share a backup with support staff, administrators, or other users.
-- Check that your backup is complete and readable.
-- Remove old copies only after confirming that another backup works.
+The Receive view shows the complete public address. Sharing an address is safe; sharing a private key or wallet export is not.
 
-SpargeNetwork cannot recover a lost wallet or missing backup.
+The displayed balance distinguishes confirmed funds from pending activity. A pending transfer can still fail to confirm and should not be treated as final.
 
-## Receive SPRG
+## Send
 
-1. Open your wallet.
-2. Select **Receive**.
-3. Share your complete wallet address with the sender.
-4. For an important payment, verify the address through a second channel.
-5. Wait for the transaction to show as confirmed.
+Enter the destination and amount, then review the confirmation dialog carefully. Check:
 
-A received transaction may first appear as **Pending**. Your available balance is updated after the transaction is included in a block.
+- the complete recipient address;
+- the amount and fee;
+- the selected sending wallet;
+- that the Explorer is connected to the expected Sparge network.
 
-## Send SPRG
+After submission, follow the full transaction ID from Wallet Activity. A successful submission means queued, not confirmed.
 
-1. Select **Send**.
-2. Enter the recipient's complete wallet address.
-3. Enter the amount.
-4. Review the amount and transaction fee.
-5. Add a memo only when its contents may be public.
-6. Check all details again.
-7. Confirm the transaction.
+## Participation status
 
-Confirmed blockchain transactions cannot be reversed. For an important amount sent to a new address, make a small test payment first.
+The wallet distinguishes these states:
 
-## Track a transaction
+- **Not registered**: no confirmed Participant record exists.
+- **Pending**: registration is queued but not yet included in a block.
+- **Active**: registered and within the activity window.
+- **Inactive**: still registered, but temporarily not eligible for Participant rewards.
 
-After sending, the wallet shows a transaction ID. Keep it until the payment is confirmed. You can also search for the transaction in the Sparge Explorer.
+Registration, heartbeat, and unregister are signed on-chain transactions. They require confirmation like a transfer.
 
-- **Pending**: the transaction is waiting to be included in a block.
-- **Confirmed**: the transaction has been included in the blockchain.
-- **Rejected**: the transaction was refused and was not submitted.
-- **Unknown**: the wallet cannot currently determine the status. Check the transaction ID in the Explorer before paying again.
+## Reward Maturity
 
-Do not repeat a payment only because confirmation takes longer than expected. Always check the original transaction first.
+Registered wallets show maturity percentage, stage, multiplier, Registered Height, age, progress to the next stage, remaining blocks, and Active or Inactive eligibility.
 
-## Memos are public
+Current stages are:
 
-A transaction memo becomes permanently visible on the blockchain. Use one only for non-confidential information.
+| Participant age | Reward multiplier | Stage |
+| ---: | ---: | --- |
+| 0-5,100 blocks | 25% | New |
+| 5,101-10,200 blocks | 60% | Growing |
+| 10,201+ blocks | 100% | Mature |
 
-Never put passwords, recovery information, personal data, email addresses, access codes, or other secrets in a memo.
+Inactivity pauses rewards but does not reset maturity. A full unregister removes the record; registering again starts from the New stage.
 
-## Restore a wallet
+## Sponsorships
 
-Use **Import wallet** to restore a backup you created earlier.
+A wallet that sponsors Participants can inspect active and inactive records, available active slots, locked Sponsor Bond, maturity, registration height, and last activity.
 
-1. Confirm that you are using the official wallet.
-2. Select your own wallet backup.
-3. After importing, check your wallet address and balance.
-4. Keep the backup after a successful import.
+The Sponsor pays and signs registration and locks the bond. It does not control the Participant wallet and receives no commission or reward share. The Participant must sign its own future transactions.
 
-Never import a backup received from someone else. Never upload a wallet backup to an Explorer, support form, or other website.
+The bond returns to the original Sponsor after a successful Participant-initiated unregister. Sponsor reclaim is unavailable in this protocol version. If the Participant loses its key, the bond may remain locked indefinitely.
 
-## Use your wallet safely
+## Back up and recover
 
-- Open the wallet only through official SpargeNetwork links.
-- Check the address and amount before every payment.
-- Keep your browser and device up to date.
-- Prefer a device that you control.
-- Never share your private key or wallet backup.
-- Treat memos as permanently public information.
-- Check an unclear transaction in the Explorer before paying again.
+Keep at least one encrypted or physically secured copy of the wallet export outside the browser profile. Test that you can identify the backup without exposing it.
+
+There is no password reset or server-side recovery. Clearing browser storage, replacing a device, or losing the export can permanently remove access.
+
+## Privacy
+
+Addresses, balances, confirmed transactions, participation records, and sponsorship relationships are public chain data. Wallet names and private keys remain local unless you expose them yourself.
