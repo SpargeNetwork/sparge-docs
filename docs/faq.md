@@ -1,77 +1,93 @@
 # Frequently Asked Questions
 
-## What is Sparge?
-
-Sparge is an experimental blockchain and JSON API for self-custody wallets, transfers, explorers, games, payment applications, marketplaces, and ecosystem tools.
-
 ## Is Sparge production ready?
 
-No. It is public-alpha software. APIs, economics, compatibility, and chain data may change before a stable release.
+No. Sparge is experimental Public Alpha software. Bugs, downtime, migrations, parameter changes, and explicitly announced resets remain possible.
 
 ## Is SPRG an investment or guaranteed store of value?
 
-No. Sparge makes no promise of value, uptime, permanence, exchange listing, or future direction.
+No. Sparge makes no promise of value, liquidity, uptime, permanence, exchange listing, or future direction.
 
-## Do I need to run a node?
+## Do I need to install software to use Sparge?
 
-No. Users and application builders can use an approved public API. Running an Observer Node is optional and is intended for independent verification or operating your own read endpoint.
+No. Regular users can use the browser wallet and Explorer on the existing network. Installation is optional for people running an observer.
 
-## Where can I find the public Explorer and Wallet?
+## Where is my wallet stored?
 
-The Explorer serves the browser Wallet at `/wallet`. The official repositories do not currently declare a canonical public deployment URL. Use only a URL announced through an official SpargeNetwork channel; do not trust unrelated search results or third-party downloads.
+Browser wallet keys are stored locally in your browser. Sparge does not hold a recoverable server-side account for you.
 
-## Where do wallet keys live?
+## Can Sparge recover a lost wallet?
 
-Browser wallet keys remain in browser storage and CLI keys remain in the local wallet file. They are not stored by the node. Wallet exports contain sensitive private key material.
+No. Restore from your own wallet export. Without the private key or a valid backup, the wallet cannot be recovered.
 
-## How do I receive SPRG?
+## Is a queued transaction confirmed?
 
-Share your complete `spg_` address. The sender can transfer to it, and you can confirm receipt by transaction ID or address in the Explorer. The balance changes after block inclusion, not merely after submission.
+No. Queued or Pending means accepted for possible inclusion. It is confirmed only after appearing in a block.
 
-## Why does my transaction say Pending?
+## Why did a pending transaction disappear?
 
-The producer accepted it into a temporary mempool but has not yet included it in a block. Pending is expected between broadcast and confirmation. Keep the transaction ID and check it before attempting another payment.
+Pending transactions are kept in the producer's process-local mempool. A restart or later validation failure can remove one. Check the full transaction ID and confirmed address history before resubmitting.
 
-## Can pending transactions disappear?
+## What is a Participant?
 
-Yes. The current mempool is not durable and clears on producer restart. A transaction that never confirms may need to be rebuilt using the current nonce and resubmitted. Never resubmit without first checking the original transaction ID and account state.
+A Participant is a registered address that can receive a share of the Participant reward pool while active. Participants do not produce blocks.
 
-## Are transaction memos private?
+## What is a Sponsor?
 
-No. Memos are public chain data and can be indexed permanently. Do not include personal or confidential information.
+A Sponsor signs and pays `register_participant` and locks the Sponsor Bond. It gains no control over the Participant and receives no commission or reward share.
 
-## Can I build a wallet or application without an SDK?
+## Can I sponsor myself?
 
-Yes. Sparge uses a documented JSON API and canonical Ed25519 signing format. The [Builder Guide](builder-guide.md) includes JavaScript examples. No official SDK is available yet.
+Yes. The same wallet then pays registration, locks its own bond, controls the Participant key, and receives its own Participant rewards.
 
-## Does Sparge support smart contracts or tokens?
+## Does a Sponsor receive part of Participant rewards?
 
-No smart-contract runtime, custom-token API, or NFT standard is currently exposed. Applications can keep their own off-chain state and use supported SPRG transfers for settlement.
+No. Rewards belong to the Participant address. Sponsorship is not referral commission, delegation, or revenue sharing.
 
-## How do applications receive live updates?
+## When is the Sponsor Bond returned?
 
-They poll the HTTP API. There is currently no WebSocket, Server-Sent Events, webhook, or subscription service. Shared application backends should poll once and distribute updates to clients.
+The bond returns to the original Sponsor after the Participant successfully unregisters. Inactivity alone does not release it.
 
-## How many confirmations are final?
+## Can a Sponsor unregister a Participant?
 
-The current protocol confirms inclusion in the chain but has no separate decentralized finality mechanism. Applications must choose a public-alpha confirmation policy appropriate to their risk.
+No. Only the Participant can currently unregister. Sponsor reclaim is unavailable in this protocol version.
 
-## What does an Observer Node do?
+## What happens if a Participant loses its wallet?
 
-It downloads and validates blocks independently, stores local chain state, and serves a read-only API and Explorer. It cannot produce blocks or accept transaction submissions.
+It can no longer sign heartbeats or unregister. Rewards eventually pause through inactivity, while the Sponsor Bond may remain locked indefinitely.
 
-## Is Observer listing private?
+## Why is my Participant status Pending?
 
-Listing is opt-in. Aggregate health includes private observers, while public entries omit IPs, internal IDs, hostnames, usernames, machine metadata, and latest hashes.
+Registration has been submitted but not yet included in a block. It becomes Active only after confirmation and successful state application.
 
-## Why is an Observer syncing or mismatched?
+## Why is my Participant Inactive?
 
-Temporary lag is normal. Persistent errors usually indicate an unreachable producer, different genesis, or divergent local observer data. See [Observer troubleshooting](observer.md#troubleshooting).
+The Participant has not sent qualifying on-chain activity within the current activity window. It remains registered but does not receive Participant rewards until reactivated.
 
-## How are rewards calculated?
+## Does inactivity reset Reward Maturity?
 
-See [Rewards and economics](protocol.md#rewards-and-economics). Reward rules are protocol behavior; application builders should not reproduce them using floating point.
+No. Inactivity pauses rewards but does not reset maturity. Unregistering and registering again does restart maturity.
 
-## Where is the endpoint reference?
+## Why do new Participants receive reduced rewards?
 
-See the [RPC API](rpc.md). Application workflows and signing are in [Build on Sparge](builder-guide.md).
+Reward Maturity gradually increases the Participant share from 25% to 60% and then 100% based on registration age. This encourages stable participation but does not identify people or prevent multiple wallets.
+
+## What does an observer do?
+
+An observer independently synchronizes, verifies, and stores chain state and serves a read-only Explorer. It does not create blocks or accept transactions.
+
+## Is observer listing private?
+
+Public listing is opt-in. Aggregate health can include private observers, while public responses omit raw IPs, internal IDs, hostnames, machine metadata, and latest hashes.
+
+## How are rewards divided?
+
+See [Block reward distribution](protocol.md#block-reward-distribution) and [Reward Maturity](protocol.md#reward-maturity).
+
+## Can I build an application on Sparge?
+
+Yes. Start with the [Builder Guide](developer-guide.md) and [Public API](rpc.md). Public Alpha integrations should verify chain and protocol versions.
+
+## Where are producer and node-development documents?
+
+They are intentionally excluded from the public documentation navigation and maintained separately under `docs/internal/` in the source repository.
