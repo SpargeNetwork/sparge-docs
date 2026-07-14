@@ -1,82 +1,57 @@
 # Security
 
-Sparge is public-alpha software. Security begins with understanding the current trust model: users control wallet keys, the official producer creates blocks, and Observer Nodes independently validate the resulting chain.
+Sparge is Public Alpha software. This page focuses on the security decisions users, Participants, observer operators, and application builders need to make.
 
-## For wallet users
+## Protect your wallet
 
-- Keep private keys and wallet exports secret.
-- Back up a wallet before receiving funds.
-- Verify the complete recipient address and network before signing.
-- Review amount, fee, and memo on a trusted screen.
-- Treat memos as permanent public data.
-- Distinguish pending from confirmed transactions.
-- Never provide a private key to support staff, an Explorer, or a node operator.
+- Use only the verified Sparge Explorer URL.
+- Back up a new wallet before receiving funds.
+- Keep wallet exports and private keys secret.
+- Never send private material to support, a Sponsor, or an observer operator.
+- Verify the complete destination address, amount, fee, and selected wallet before signing.
+- Treat unexpected wallet-import requests as suspicious.
 
-Browser storage is convenient but not equivalent to an operating-system keystore or hardware-backed key. Current wallet tooling is experimental.
+Anyone with the private key can control the wallet. Sparge cannot reverse a signed transfer or recover a lost key.
 
-## For application builders
+## Understand browser storage
 
-### Verify chain identity
+Browser wallets store keys locally. Clearing site data, replacing a browser profile, device loss, malware, or disk failure can remove access. A producer database backup does not contain or recover user wallet keys.
 
-Pin the expected `chainId`, `genesisHash`, `protocolVersion`, and `economicsVersion`. Verify them at startup and before signing. Do not trust a token symbol or hostname alone.
+Keep a protected wallet export outside the browser. Do not store an unencrypted export in cloud sharing, public source control, chat, screenshots, or issue attachments.
 
-### Keep signing local
+## Verify before trusting
 
-Do not send private keys to a Sparge endpoint. Prefer client-side, hardware-backed, or dedicated signing boundaries. If a backend must sign, isolate keys from web-facing processes and restrict what can be signed.
+Public Alpha may have downtime, bugs, migrations, or explicitly announced resets. Check network health and transaction confirmation in the Explorer. A Pending or queued transaction is not final.
 
-### Use exact arithmetic
+Builders should verify chain ID, genesis hash, protocol version, and economics version before signing or submitting transactions.
 
-Use decimal strings and `BigInt`. Floating-point rounding can send or credit the wrong amount.
+## Participation risks
 
-### Treat public data as untrusted input
+Sponsorship does not give a Sponsor control over a Participant, but it locks the Sponsor Bond. Only the Participant can currently unregister. If the Participant loses its private key, the bond may remain locked indefinitely because Sponsor reclaim is unavailable.
 
-Addresses, aliases, memos, versions, hashes, and API error messages must be escaped before rendering. Do not create HTML with unsanitized chain data.
+Reward Maturity and displayed estimates are protocol state, not guaranteed income or value. Participation does not establish a legal identity or prove that separate wallets belong to separate people.
 
-### Design idempotent workflows
+## Observer privacy
 
-Use transaction IDs as stable reconciliation keys. A repeated poll, process restart, or duplicate submission must not fulfill a payment or game reward twice.
+Observer public listing is opt-in. Aggregate network counts can include private observers. Public listings omit raw IP addresses, hostnames, usernames, internal node IDs, machine metadata, and latest block hashes.
 
-### Respect API protections
+Running any internet-connected service still exposes network information to infrastructure providers and the upstream producer. Use an appropriate network and host security model.
 
-Use bounded requests, backoff, jitter, and `Retry-After`. Do not bypass request-size or rate limits by distributing traffic across hosts. Cache immutable blocks and transactions.
+## API safety for builders
 
-## Endpoint trust
+- Never collect or transmit private keys.
+- Preserve canonical signed fields exactly.
+- Use integer strings for protocol amounts.
+- Keep complete transaction IDs in routes and requests.
+- Respect pagination, request limits, `Retry-After`, and temporary errors.
+- Avoid logging complete signed requests, signatures, memos, or sensitive user metadata.
 
-The official public Explorer/API URL is not currently declared in the project repositories. Use only endpoints announced through official SpargeNetwork channels.
+## Network limitations
 
-A malicious endpoint can lie about balances, nonces, fees, or transaction confirmation and can observe queried addresses. Local signing prevents it from directly learning a private key, but it cannot make false read data trustworthy.
+The current network has one official producer. Observers independently validate state, but they do not provide decentralized producer liveness, censorship resistance, fork choice, or finality.
 
-For higher assurance, compare independent endpoints or run an [Observer Node](observer.md).
+Sparge is not represented as formally verified or independently audited. Do not treat Public Alpha testing as proof of economic or security safety.
 
-## Confirmation and finality
+## Report a vulnerability
 
-Transaction admission returns `queued`, not confirmed. Confirmation means the transaction appears in a stored block. The current single-producer model has no separate decentralized finality protocol. Applications must define and communicate their own confirmation policy for public-alpha risk.
-
-## Privacy
-
-Sparge is a transparent chain. Addresses, amounts, transaction relationships, and memos can be indexed publicly. Reusing an address links its activity.
-
-Do not put personal data or secrets in memos. Querying a hosted Explorer can also reveal which addresses interest the requesting IP address.
-
-Observer listing is opt-in. Public listings omit IPs, hostnames, internal node IDs, machine metadata, and latest block hashes.
-
-## Observer safety
-
-- Download source and installers only from official repositories or release channels.
-- Verify chain identity after installation and update.
-- Do not expose local observer settings to the internet.
-- Keep observer data separate from wallet key storage.
-- Preserve data and logs before resetting a mismatch under investigation.
-- Remember that an observer is a read endpoint, not a transaction broadcaster.
-
-## Protocol limitations
-
-Sparge currently has one official producer, no smart-contract sandbox, no multi-producer consensus, no subscription transport, and no formal protocol audit implied by its test suites. These limits should be included in application threat models.
-
-## Reporting a vulnerability
-
-Report security issues privately. PGP contact details are available on request. The project aims to acknowledge receipt within 72 hours and provide a remediation timeline after triage.
-
-The reporting scope covers core chain logic, wallet and signing flows, RPC interfaces, and Explorer behavior. Third-party dependencies and self-hosting misconfiguration are outside the project scope unless they expose a Sparge defect.
-
-Do not publish private keys, live exploit secrets, complete sensitive payloads, or production data in an issue.
+Follow the repository [Security Policy](../SECURITY.md) and report vulnerabilities privately. Do not include private keys, live exploit secrets, complete signatures, or sensitive production data in a public issue.
