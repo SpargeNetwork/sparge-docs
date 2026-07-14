@@ -1,142 +1,117 @@
-# Protocol
+# How Sparge Works
 
-This guide explains the public-alpha chain model. It describes what applications and users can rely on without covering producer deployment or internal implementation.
+This page explains the current Public Alpha network. It describes the existing Sparge chain; it is not a guide for creating another chain.
 
-## Current network model
+## Network model
 
-Sparge currently uses one official producer. It orders accepted transactions and creates blocks. Observer Nodes independently synchronize, validate, and store the chain state.
+Sparge currently uses one official producer. The producer orders accepted transactions and creates blocks. Observer nodes independently download, verify, and store those blocks, but they do not produce blocks, select producers, or participate in consensus.
 
-Observers make chain comparison and independent verification possible, but they do not produce blocks, vote on blocks, or provide a decentralized consensus/finality mechanism. Producer availability, ordering, and censorship resistance are operational properties in this release.
+This design provides independent validation, not decentralized producer liveness, censorship resistance, fork choice, or finality. Observer heartbeats report network health only and cannot change chain state or consensus.
 
-## Chain identity
+## Blocks and confirmation
 
-A Sparge chain is identified by:
+Transactions enter a process-local mempool before a producer includes them in a block. A response saying `queued` or a wallet state saying Pending is not confirmation.
 
-- `chainId`
-- `genesisHash`
-- `protocolVersion`
-- `economicsVersion`
+Each block commits to its previous block, transactions, chain identity, and deterministic state root. Explorer transaction pages use the complete 64-character transaction ID.
 
-Wallets and applications should verify these values before signing or indexing. A matching name or token symbol is not sufficient proof that two endpoints serve the same chain.
+Pending transactions can disappear after a producer restart and may need to be submitted again. Confirmed transactions remain in chain history.
 
-## Blocks
+## Addresses and keys
 
-Blocks have sequential heights beginning at genesis, a timestamp, previous-block hash, chain identity, transaction list, fee and reward data, and a state root.
+Sparge wallets use Ed25519 keys. Public addresses begin with `spg_`. Private keys authorize transactions and must never be sent to a node, Explorer, Sponsor, or support channel.
 
-The previous hash links each block to its predecessor. The state root commits to the resulting canonical state. Explorers and indexers should preserve the last processed height and hash and stop if continuity changes unexpectedly.
+Addresses, balances, transactions, participation records, and sponsorship relationships are public. A wallet name is only a local browser label.
 
-The configured target block interval is exposed by `/api/status`. A target is not a guarantee: applications should use actual timestamps and tolerate delayed blocks.
+## Transaction types
 
-## Accounts
+Users can submit:
 
-An account is identified by an address derived from a 32-byte Ed25519 public key:
+- `transfer`: move SPRG to another address;
+- `register_participant`: register a Participant and lock a Sponsor Bond;
+- `heartbeat`: refresh on-chain Participant activity;
+- `unregister_participant`: remove a Participant and release its bond.
+
+The browser wallet creates and signs these transactions locally. Fees go to treasury. Exact signed fields and endpoint contracts are documented in the [Public API](rpc.md).
+
+## Participation and rewards
+
+Participation is an optional on-chain role. A registered Participant can receive a share of the Participant reward pool while active. Registration does not grant block-production rights.
+
+### Sponsor and Participant
+
+A **Sponsor** signs and pays the registration transaction and locks the Sponsor Bond. The **Participant** is the registered wallet that receives Participant rewards and maintains its own activity.
+
+You may sponsor yourself. In that case the same wallet is Sponsor and Participant.
+
+When sponsoring another wallet:
+
+- the Sponsor pays registration costs and locks the bond;
+- the Participant retains sole control of its private key;
+- rewards belong entirely to the Participant;
+- the Participant signs its own heartbeats and unregister transaction;
+- the Sponsor cannot transact or unregister on behalf of the Participant.
+
+Sponsorship is not a referral, delegation, commission, or revenue-sharing system. A Sponsor receives no commission or reward share.
+
+### Sponsor capacity and bond
+
+A Sponsor can have up to 10 active Sponsored Participants. Inactive records remain visible but do not consume an active slot.
+
+The configured bond is `50,000,000` base units. With the current nine token decimals, the Explorer displays this as **0.05 SPRG**. It must not be described as 50 SPRG unless a future explicit economics migration changes the configured amount.
+
+The bond is locked rather than burned. A successful Participant-initiated unregister returns it to the original Sponsor. Sponsor reclaim is unavailable in this protocol version. If a Participant loses its private key, its bond may remain locked indefinitely.
+
+### Activity
+
+A Participant stays active when qualifying on-chain activity updates its Last Seen Height within the 5,100-block activity window, approximately three days at the current target block time.
+
+An inactive Participant remains registered but does not receive Participant rewards. A later valid transaction from that Participant can reactivate it.
+
+Inactivity pauses rewards but does not reset Reward Maturity. Unregistering removes the registration; registering again creates a new Registered Height and starts maturity again.
+
+### Reward Maturity
+
+Reward Maturity gradually raises a Participant's share according to the age of the current registration:
+
+| Age in blocks | Multiplier | Stage |
+| ---: | ---: | --- |
+| 0 through 5,100 | 25% | New |
+| 5,101 through 10,200 | 60% | Growing |
+| More than 10,200 | 100% | Mature |
+
+Maturity is based on Registered Height, not timestamps or observer heartbeats. Before activation block 1,000, legacy full Participant rewards apply. After activation, the configured stages apply deterministically.
+
+If an equal base share is 10 SPRG, a New Participant receives 2.5 SPRG, a Growing Participant 6 SPRG, and a Mature Participant 10 SPRG. Integer calculations round down in base units; deterministic remainder goes to treasury.
+
+### Reward calculation
+
+For Participant pool `P`, active Participant count `N`, and maturity multiplier `M` in basis points:
 
 ```text
-spg_ + base58(sha256(publicKeyBytes)[0..20])
+baseShare = floor(P / N)
+participantReward = floor(baseShare * M / 10000)
+treasuryRemainder = P - sum(participantReward)
 ```
 
-Canonical account state includes a balance and nonce. Participation records and balance history add protocol-specific state for eligible accounts.
+This calculation uses integers and conserves the complete pool.
 
-The nonce prevents replay and orders transactions from one sender. Submitted transactions must use the next nonce expected by the producer. Applications sending multiple transactions from one account should serialize them.
+## Block reward distribution
 
-## Amounts and fees
+The current per-block allocation is:
 
-Balances, transfers, fees, pools, and rewards use integer base units represented as decimal strings. The current chain exposes 9 decimals, but clients should read `decimals` from status.
-
-Fees are paid by the sender and credited to the treasury. The current minimum is exposed as `minFeeMicro`. Applications must avoid floating-point arithmetic.
-
-## Transactions
-
-Client-submittable transaction types are:
-
-- `transfer`: moves an amount from one account to another
-- `register_participant`: registers a participant and may lock a sponsor bond
-- `unregister_participant`: removes the sender's participation record and releases its bond
-- `heartbeat`: refreshes an on-chain participant's activity
-
-The participant heartbeat is an on-chain transaction. It is different from an Observer Node's private network-health heartbeat.
-
-### Canonical message
-
-Transactions sign this UTF-8 field order:
-
-```text
-type|chainId|from|to|amountMicro|feeMicro|nonce|publicKeyHex|sponsor|participant|memo
-```
-
-The transaction ID is SHA-256 of the canonical message bytes. The Ed25519 signature covers the same bytes and is excluded from the transaction ID.
-
-Unused signed fields are empty strings. Memos are optional, public, and limited to 128 UTF-8 bytes.
-
-### Lifecycle
-
-1. A wallet reads chain identity, balance, fee, and nonce.
-2. It constructs and signs the canonical message locally.
-3. The producer validates and queues the transaction.
-4. Queued transactions remain non-canonical until included in a block.
-5. Block inclusion updates account and protocol state.
-
-The mempool is temporary and is cleared by a producer restart. Queued is therefore not the same as confirmed.
-
-## Participation
-
-A participant is registered through an on-chain transaction. The signing `from` account is the sponsor, fee payer, nonce owner, and source of the refundable bond. The `participant` field identifies the account being registered.
-
-The configured genesis operator has one free self-registration opportunity during the first `genesisFreeBlocks`, provided it has not already been used. All other registrations follow normal fee, bond, and sponsorship rules.
-
-A participant is active when its `lastSeenHeight` falls within the protocol activity window. An accepted transaction sent by the participant updates that height. Unregistering removes the participant and returns the bond to its sponsor.
-
-## Rewards and economics
-
-The current per-block distribution is:
-
-| Destination | Share | Rule |
+| Destination | Share | Behavior |
 | --- | ---: | --- |
-| Active participants | 15% | Split equally; sent to treasury when no participant is active. |
-| Node-holder pool | 70% | Accumulates for scheduled distribution. |
-| Treasury | 10% | Credited directly, plus fees and integer remainders. |
-| Eligible-holder pool | 5% | Accumulates for scheduled distribution. |
+| Active Participants | 15% | Equal base shares adjusted by Reward Maturity. |
+| Node pool | 70% | Accrues for the configured Node Holder mechanism. |
+| Treasury | 10% | Credited directly, plus fees and deterministic remainder. |
+| Holder pool | 5% | Accrues for eligible holder payouts. |
 
-Pool addresses are transparent system addresses and are not ordinary spendable wallets.
+Holder eligibility uses a rolling 14-day average balance and a current threshold of 1,000 SPRG. The exact window is calculated in blocks from the configured target block time.
 
-### Holder eligibility
+## Current limitations
 
-Holder rewards use a rolling 14-day average balance measured in blocks:
-
-```text
-windowBlocks = floor((14 * 24 * 60 * 60) / blockTimeSeconds)
-```
-
-An address is eligible when its average balance reaches 1,000 SPRG. Eligible addresses receive a proportional share:
-
-```text
-reward = holderPool * addressAverage / totalEligibleAverage
-```
-
-Integer remainders go to the treasury. When no address is eligible at payout, the complete holder pool goes to the treasury.
-
-## State
-
-Canonical state includes:
-
-- balances and nonces
-- participant and sponsor records
-- reward-pool accounting
-- balance history used by holder eligibility
-- total supply and mint accounting
-- latest chain identity, height, hash, and state root
-
-The public API exposes selected state and derived summaries. Application-specific records such as game inventory, marketplace listings, invoices, or user profiles are not Sparge protocol state.
-
-## Known limitations
-
-- one official producer and no multi-producer consensus
-- no protocol-level finality depth beyond inclusion in the current chain
-- no smart-contract runtime
-- no token or NFT creation standard
-- no WebSocket, SSE, webhook, or subscription API
-- temporary, non-durable mempool
-- economics and compatibility may change before stable release
-- no formal verification or independent security audit implied by runtime tests
-
-Builders should communicate these limits and design migrations, retries, and reconciliation accordingly.
+- One official producer controls ordering and block availability.
+- Sponsor reclaim and Participant co-signing during sponsored registration are unavailable.
+- Participation does not identify people or prevent one person from controlling multiple wallets.
+- Economics and protocol behavior can still change during Public Alpha.
+- The implementation has test coverage and deterministic replay tooling but is not formally verified or represented as independently audited.
