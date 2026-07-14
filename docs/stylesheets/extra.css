@@ -2,3 +2,15 @@
   --md-primary-fg-color: #1fa37a;
   --md-accent-fg-color: #2bb673;
 }
+
+/* Sidebar section headers */
+.md-nav__item--section > .md-nav__link {
+  color: var(--md-primary-fg-color) !important;
+  font-weight: 700;
+}
+
+/* Fallback voor nieuwere Material versies */
+.md-nav--primary .md-nav__title {
+  color: var(--md-primary-fg-color) !important;
+  font-weight: 700;
+}
