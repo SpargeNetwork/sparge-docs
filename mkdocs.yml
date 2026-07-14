@@ -8,8 +8,8 @@ exclude_docs: |
 theme:
   name: material
 
-  logo: assets/sparge-logo.png
-  favicon: assets/sparge-logo.png
+  logo: sparge-logo.png
+  favicon: sparge-logo.png
 
   palette:
     scheme: slate
