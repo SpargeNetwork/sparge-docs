@@ -1,125 +1,119 @@
-# How Sparge Works
+# Frequently Asked Questions
 
-This page explains the current Public Alpha network. It describes the existing Sparge chain; it is not a guide for creating another chain.
+## Is Sparge production ready?
 
-## Network model
+No. Sparge is experimental Public Alpha software. Bugs, downtime, migrations, parameter changes, and explicitly announced resets remain possible.
 
-Sparge currently uses one official producer. The producer orders accepted transactions and creates blocks. Observer nodes independently download, verify, and store those blocks, but they do not produce blocks, select producers, or participate in consensus.
+## Is SPRG an investment or guaranteed store of value?
 
-This design provides independent validation, not decentralized producer liveness, censorship resistance, fork choice, or finality. Observer heartbeats report network health only and cannot change chain state or consensus.
+No. Sparge makes no promise of value, liquidity, uptime, permanence, exchange listing, or future direction.
 
-## Blocks and confirmation
+## Do I need to install software to use Sparge?
 
-Transactions enter a process-local mempool before a producer includes them in a block. A response saying `queued` or a wallet state saying Pending is not confirmation.
+No. Regular users can use the browser wallet and Explorer on the existing network. Installation is optional for people running an observer.
 
-Each block commits to its previous block, transactions, chain identity, and deterministic state root. Explorer transaction pages use the complete 64-character transaction ID.
+## Where is my wallet stored?
 
-Pending transactions can disappear after a producer restart and may need to be submitted again. Confirmed transactions remain in chain history.
+Browser wallet keys are stored locally in your browser. Sparge does not hold a recoverable server-side account for you.
 
-## Addresses and keys
+## Can Sparge recover a lost wallet?
 
-Sparge wallets use Ed25519 keys. Public addresses begin with `spg_`. Private keys authorize transactions and must never be sent to a node, Explorer, Sponsor, or support channel.
+No. Restore from your own wallet export. Without the private key or a valid backup, the wallet cannot be recovered.
 
-Addresses, balances, transactions, participation records, and sponsorship relationships are public. A wallet name is only a local browser label.
+## Is a queued transaction confirmed?
 
-## Transaction types
+No. Queued or Pending means accepted for possible inclusion. It is confirmed only after appearing in a block.
 
-Users can submit:
+## Why did a pending transaction disappear?
 
-- `transfer`: move SPRG to another address;
-- `register_participant`: register a Participant and lock a Sponsor Bond;
-- `heartbeat`: refresh on-chain Participant activity;
-- `unregister_participant`: remove a Participant and release its bond.
+Pending transactions are kept in the producer's process-local mempool. A restart or later validation failure can remove one. Check the full transaction ID and confirmed address history before resubmitting.
 
-The browser wallet creates and signs these transactions locally. Fees go to treasury. Exact signed fields and endpoint contracts are documented in the [Public API](rpc.md).
+## What is a Participant?
 
-## Participation and rewards
+A Participant is a registered address that can receive a share of the Participant reward pool while active. Participants do not produce blocks.
 
-Participation is an optional on-chain role. A registered Participant can receive a share of the Participant reward pool while active. Registration does not grant block-production rights.
+## What is a Sponsor?
 
-### Sponsor and Participant
+A Sponsor signs and pays `register_participant` and locks the Sponsor Bond. It gains no control over the Participant and receives no commission or reward share.
 
-A **Sponsor** signs and pays the registration transaction and locks the Sponsor Bond. The **Participant** is the registered wallet that receives Participant rewards and maintains its own activity.
+## Can I sponsor myself?
 
-You may sponsor yourself. In that case the same wallet is Sponsor and Participant.
+Yes. The same wallet then pays registration, locks its own bond, controls the Participant key, and receives its own Participant rewards.
 
-When sponsoring another wallet:
+## Does a Sponsor receive part of Participant rewards?
 
-- the Sponsor pays registration costs and locks the bond;
-- the Participant retains sole control of its private key;
-- rewards belong entirely to the Participant;
-- the Participant signs its own heartbeats and unregister transaction;
-- the Sponsor cannot transact or unregister on behalf of the Participant.
+No. Rewards belong to the Participant address. Sponsorship is not referral commission, delegation, or revenue sharing.
 
-Sponsorship is not a referral, delegation, commission, or revenue-sharing system. A Sponsor receives no commission or reward share.
+## When is the Sponsor Bond returned?
 
-### Sponsor capacity and bond
+The bond returns to the original Sponsor after the Participant successfully unregisters. Inactivity alone does not release it.
 
-A Sponsor can have up to 10 active Sponsored Participants. Inactive records remain visible but do not consume an active slot.
+## Can a Sponsor unregister a Participant?
 
-The configured bond is `50,000,000` base units. With the current nine token decimals, the Explorer displays this as **0.05 SPRG**. It must not be described as 50 SPRG unless a future explicit economics migration changes the configured amount.
+No. Only the Participant can currently unregister. Sponsor reclaim is unavailable in this protocol version.
 
-The bond is locked rather than burned. A successful Participant-initiated unregister returns it to the original Sponsor. Sponsor reclaim is unavailable in this protocol version. If a Participant loses its private key, its bond may remain locked indefinitely.
+## What happens if a Participant loses its wallet?
 
-### Activity
+It can no longer sign heartbeats or unregister. Rewards eventually pause through inactivity, while the Sponsor Bond may remain locked indefinitely.
 
-A Participant stays active when qualifying on-chain activity updates its Last Seen Height within the 5,100-block activity window, approximately three days at the current target block time.
+## Why is my Participant status Pending?
 
-An inactive Participant remains registered but does not receive Participant rewards. A later valid transaction from that Participant can reactivate it.
+Registration has been submitted but not yet included in a block. It becomes Active only after confirmation and successful state application.
 
-Inactivity pauses rewards but does not reset Reward Maturity. Unregistering removes the registration; registering again creates a new Registered Height and starts maturity again.
+## Why is my Participant Inactive?
 
-### Reward Maturity
+The Participant has not sent qualifying on-chain activity within the current activity window. It remains registered but does not receive Participant rewards until reactivated.
 
-Reward Maturity gradually raises a Participant's share according to the age of the current registration:
+## Does inactivity reset Reward Maturity?
 
-#### Activation at block 1,000
+No. Inactivity pauses rewards but does not reset maturity. Unregistering and registering again does restart maturity.
 
-Reward Maturity is **not applied at block heights 0 through 999**. During those first 1,000 blocks, every eligible Active Participant receives the legacy 100% multiplier, regardless of registration age.
+## Why do new Participants receive reduced rewards?
 
-The maturity rules activate at **block height 1,000**. From that block onward, each Participant receives the multiplier that matches the age of its current registration.
+Reward Maturity gradually increases the Participant share from 25% to 60% and then 100% based on registration age. This encourages stable participation but does not identify people or prevent multiple wallets.
 
-Registration age still accumulates before activation. It is calculated from the original Registered Height and does not restart at block 1,000. For example, a Participant registered at block 200 has an age of 800 blocks when maturity activates at block 1,000 and therefore enters the New stage at 25%.
+## Does Reward Maturity apply during the first 1,000 blocks?
 
-| Age in blocks | Multiplier | Stage |
-| ---: | ---: | --- |
-| 0 through 5,100 | 25% | New |
-| 5,101 through 10,200 | 60% | Growing |
-| More than 10,200 | 100% | Mature |
+No. At block heights 0 through 999, every eligible Active Participant uses the legacy 100% multiplier. Reward Maturity activates at block height 1,000.
 
-Maturity is based on Registered Height, not timestamps or observer heartbeats. The activation boundary changes only the applied reward multiplier; it does not change registration records or their age.
+Registration age still accumulates before activation. At block 1,000, the multiplier is selected using the Participant's original Registered Height; age does not restart from zero.
 
-If an equal base share is 10 SPRG, a New Participant receives 2.5 SPRG, a Growing Participant 6 SPRG, and a Mature Participant 10 SPRG. Integer calculations round down in base units; deterministic remainder goes to treasury.
+## What does an observer do?
 
-### Reward calculation
+An observer independently synchronizes, verifies, and stores chain state and serves a read-only Explorer. It does not create blocks or accept transactions.
 
-For Participant pool `P`, active Participant count `N`, and maturity multiplier `M` in basis points:
+## Is observer listing private?
 
-```text
-baseShare = floor(P / N)
-participantReward = floor(baseShare * M / 10000)
-treasuryRemainder = P - sum(participantReward)
-```
+Public listing is opt-in. Aggregate health can include private observers, while public responses omit raw IPs, internal IDs, hostnames, machine metadata, and latest hashes.
 
-This calculation uses integers and conserves the complete pool.
+## How are rewards divided?
 
-## Block reward distribution
+Each block assigns 15% to the Participant Pool, 70% to the Node Pool, 10% to Treasury, and 5% to the Holder Pool. See [Block reward distribution](protocol.md#block-reward-distribution), [Reward payout cycle](protocol.md#reward-payout-cycle), and [Reward Maturity](protocol.md#reward-maturity).
 
-The current per-block allocation is:
+## Why does the block reward change?
 
-| Destination | Share | Behavior |
-| --- | ---: | --- |
-| Active Participants | 15% | Equal base shares adjusted by Reward Maturity. |
-| Node pool | 70% | Accrues for the configured Node Holder mechanism. |
-| Treasury | 10% | Credited directly, plus fees and deterministic remainder. |
-| Holder pool | 5% | Accrues for eligible holder payouts. |
+The reward is calculated from the current supply and annualized emission rate instead of being a fixed amount. The rate declines from 5% to 2% over the first four target years. Integer base-unit accumulation can also create tiny differences between adjacent blocks. See [Emission and changing block rewards](protocol.md#emission-and-changing-block-rewards).
 
-Holder eligibility uses a rolling 14-day average balance and a current threshold of 1,000 SPRG. The exact window is calculated in blocks from the configured target block time.
+## What is the difference between accumulated Node and Holder rewards?
 
-## Current limitations
+They are separate pending pools. The Node Pool receives 70% of each block's minting and the Holder Pool receives 5%, so the Node Pool is normally about 14 times larger. Neither displayed amount is the combined total.
 
-- One official producer controls ordering and block availability.
-- Sponsor reclaim and Participant co-signing during sponsored registration are unavailable.
-- Participation does not identify people or prevent one person from controlling multiple wallets.
-- Economics and protocol behavior can still change during Public Alpha.
-- The implementation has test coverage and deterministic replay tooling but is not formally verified or represented as independently audited.
+## Is the complete Holder Pool paid at the next payout?
+
+The complete pool is processed, including the payout block's accrual. Eligible holders receive proportional rewards based on their average balance over the block window. Integer leftovers go to Treasury. If there are no eligible holders, the complete pool goes to Treasury instead of rolling into the next cycle.
+
+## Does running an observer earn Node Pool rewards?
+
+No. Observers independently validate the chain but do not currently receive protocol rewards. Node Pool distribution uses recorded protocol stake, and Public Alpha currently has no public stake transaction or browser-wallet staking flow.
+
+## Can I build an application on Sparge?
+
+Yes. Start with the [Builder Guide](developer-guide.md) and [Public API](rpc.md). Public Alpha integrations should verify chain and protocol versions.
+
+## Does linking Discord create a transaction or fee?
+
+No. The wallet signs a short-lived off-chain verification message. It does not submit a transaction and costs no SPRG. The private key never leaves the browser.
+
+## Are my Discord account and badges public after linking?
+
+No. Community Identity is private by default. Every public profile field must be enabled explicitly, and balance visibility has its own disabled-by-default setting.
