@@ -8,7 +8,7 @@ The network currently has one official producer. Observers verify and store the 
 
 - [Getting Started](getting-started.md): use the live network for the first time.
 - [Wallet](wallet.md): create, back up, import, and use a browser wallet.
-- [Participation and Rewards](protocol.md#participation-and-rewards): understand registration, sponsorship, activity, maturity, and rewards.
+- [Participation and Rewards](protocol.md#participation-and-rewards): understand registration, sponsorship, activity, and maturity.
 - [Observer Node](observer.md): independently sync and validate Sparge.
 - [Builder Guide](developer-guide.md): build an application against the existing network.
 - [Public API](rpc.md): review supported public HTTP endpoints.
