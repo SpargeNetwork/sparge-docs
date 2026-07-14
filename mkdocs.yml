@@ -1,5 +1,6 @@
 site_name: Sparge Chain
 site_description: Public alpha documentation for Sparge Chain
+docs_dir: docs
 
 exclude_docs: |
   internal/
@@ -17,17 +18,21 @@ theme:
 
 nav:
   - Home: index.md
-  - Why Sparge: why-sparge.md
-  - Getting Started: getting-started.md
+  - Start Using Sparge: getting-started.md
   - Wallet: wallet.md
-  - Participate: participation.md
-  - Build on Sparge: builder-guide.md
-  - RPC API: rpc.md
-  - Protocol: protocol.md
+  - Participation & Rewards: protocol.md
+  - Run an Observer: observer.md
+  - Build on Sparge:
+      - Builder Guide: developer-guide.md
+      - Public API: rpc.md
   - Security: security.md
   - FAQ: faq.md
-  - Reference:
-      - Integration Configuration: reference/configuration.md
+
+markdown_extensions:
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true
 
 extra_css:
   - stylesheets/extra.css
