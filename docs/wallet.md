@@ -38,6 +38,17 @@ Enter the destination and amount, then review the confirmation dialog carefully.
 
 After submission, follow the full transaction ID from Wallet Activity. A successful submission means queued, not confirmed.
 
+## Signing confirmation
+
+Every wallet signature requires an explicit confirmation. The wallet has two visually distinct review flows:
+
+- **Signed message**: an off-chain ownership proof or authentication message. The dialog shows the complete human-readable message, selected wallet, purpose, raw message, SHA-256 hash, and confirms that no transaction is broadcast and no SPRG fee is charged.
+- **Signed transaction**: an on-chain state change. The dialog shows the transaction type, selected wallet, network, recipient or Participant where applicable, amount, fee, nonce, memo, consequences, canonical message, and transaction hash before **Sign & Broadcast** becomes the final action.
+
+Rejecting or closing either dialog signs nothing. A transaction is never broadcast before confirmation. The private key remains local and is never shown in signing details.
+
+Transfer, self-registration, sponsored registration, unregister, Participant heartbeat, and Discord wallet verification all use this shared confirmation system. Future wallet signing actions must use the same gateway.
+
 ## Participation status
 
 The wallet distinguishes these states:
@@ -49,9 +60,17 @@ The wallet distinguishes these states:
 
 Registration, heartbeat, and unregister are signed on-chain transactions. They require confirmation like a transfer.
 
+The optional **Heartbeat Reminder** only warns when activity is close to expiring. It never signs or broadcasts a heartbeat automatically; use **Send Heartbeat** and approve the transaction confirmation yourself.
+
+Participant rewards are only the 15% Participant Pool. Node Pool, Holder Pool, Treasury, emission, and payout-cycle behavior are documented under [Block Rewards and Pool Payouts](protocol.md#block-reward-distribution).
+
 ## Reward Maturity
 
 Registered wallets show maturity percentage, stage, multiplier, Registered Height, age, progress to the next stage, remaining blocks, and Active or Inactive eligibility.
+
+Reward Maturity does not apply at block heights 0 through 999. During those first 1,000 blocks, every eligible Active Participant uses the legacy 100% reward multiplier. The maturity stages become effective at block height 1,000.
+
+Participant age still accumulates from the original Registered Height before activation. It does not restart at block 1,000.
 
 Current stages are:
 
@@ -80,3 +99,7 @@ There is no password reset or server-side recovery. Clearing browser storage, re
 ## Privacy
 
 Addresses, balances, confirmed transactions, participation records, and sponsorship relationships are public chain data. Wallet names and private keys remain local unless you expose them yourself.
+
+## Discord Community Identity
+
+The Community tab can link the selected wallet to a Discord account using a short-lived signed message. The universal message confirmation displays the exact challenge and hash before signing. It never signs automatically, creates no transaction, costs no SPRG, and keeps the private key local. See [Discord Community Identity](community-identity.md).
