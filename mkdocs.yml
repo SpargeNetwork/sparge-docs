@@ -27,7 +27,7 @@ nav:
   - Wallet: wallet.md
   - Participation & Rewards: protocol.md
   - Run an Observer: observer.md
-  - Community: community-identity.md
+  - Community Identity: community-identity.md
   - Build on Sparge:
       - Builder Guide: developer-guide.md
       - Public API: rpc.md
