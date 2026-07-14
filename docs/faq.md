@@ -87,7 +87,3 @@ See [Block reward distribution](protocol.md#block-reward-distribution) and [Rewa
 ## Can I build an application on Sparge?
 
 Yes. Start with the [Builder Guide](developer-guide.md) and [Public API](rpc.md). Public Alpha integrations should verify chain and protocol versions.
-
-## Where are producer and node-development documents?
-
-They are intentionally excluded from the public documentation navigation and maintained separately under `docs/internal/` in the source repository.
